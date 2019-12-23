@@ -20,6 +20,9 @@ val helpText = """
   
   `!404 search <name|id|index no>`
   Search class list for student
+  
+  `!404 classlist`
+  Print full classlist
 """.trimIndent()
 
 @UnstableDefault

@@ -8,3 +8,6 @@ Bot for M20404
   
 ###  `!404 search <name|id|index no>`
   Search class list for student
+
+###  `!404 classlist`
+  Print full classlist
