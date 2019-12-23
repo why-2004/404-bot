@@ -23,6 +23,9 @@ val helpText = """
   
   `!404 classlist`
   Print full classlist
+  
+  `!404 whois <mention|discord username>`
+  Prints information about mentioned user
 """.trimIndent()
 
 @UnstableDefault
@@ -96,25 +99,14 @@ suspend fun main() {
         val result = ClassLists.search(query)
         println(query)
         reply {
-          description = if (result.isNotEmpty())
-            buildTable(result)
-          else
-            "No results found"
-
-          color = if (result.isNotEmpty())
-            Colors.GREEN
-          else
-            Colors.RED
-        }
-      }
-      command("search:new") {
-        val query = words.drop(2).joinToString(" ")
-        val result = ClassLists.search(query)
-        println("new $query")
-        reply {
           if (result.isEmpty())
             description = "No results found"
-          fields = buildTableEmbed(result) as MutableList<EmbedField>
+
+          fields = if (result.isEmpty())
+            mutableListOf()
+          else
+            buildTableEmbed(result) as MutableList<EmbedField>
+
           color = if (result.isNotEmpty())
             Colors.GREEN
           else
@@ -144,6 +136,31 @@ suspend fun main() {
         )
         newList.next()
         Database[message.id] = newList
+      }
+
+      command("whois") {
+        val query = if (usersMentioned.isNotEmpty())
+          usersMentioned.first().username
+        else
+          words.drop(2).joinToString(" ")
+
+        val result = ClassLists.load().firstOrNull {
+          it.discord.toLowerCase() == query.toLowerCase()
+        }
+        reply {
+          if (result == null)
+            description = "No results found"
+
+          fields = if (result == null)
+            mutableListOf()
+          else
+            buildTableEmbed(listOf(result)) as MutableList<EmbedField>
+
+          color = if (result != null)
+            Colors.GREEN
+          else
+            Colors.RED
+        }
       }
     }
   }

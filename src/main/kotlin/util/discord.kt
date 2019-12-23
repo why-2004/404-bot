@@ -24,7 +24,7 @@ fun buildTable(data: List<Student>): String {
   table.addRow("No", "ID", "Name", "Combi")
   table.addRule()
   data.forEach {
-    table.addRow(it.index, it.id, it.name, it.combi)
+    table.addRow(it.index, it.id, it.name, it.combination)
     table.addRule()
   }
   table.renderer.cwc = CWC_LongestWordMin(listOf(3, 3, 15, 3).toIntArray())
@@ -43,8 +43,8 @@ fun buildTableEmbed(data: List<Student>): List<EmbedField> {
           **Id**
           ${it.id}
           
-          **Combi**
-          ${it.combi}
+          **Combination**
+          ${it.combination}
         """.trimIndent(),
         inline = true
     )

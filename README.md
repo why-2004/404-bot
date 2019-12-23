@@ -11,3 +11,6 @@ Bot for M20404
 
 ###  `!404 classlist`
   Print full classlist
+  
+### `!404 whois <mention|discord username>`
+  Prints information about mentioned user

@@ -25,6 +25,7 @@ object ClassLists {
   fun search(query: String): List<Student> {
     return listOf(
         FuzzySearch.extractSorted(query, load().map { it.name }, 70),
+        FuzzySearch.extractSorted(query, load().map { it.discord }, 70),
         FuzzySearch.extractSorted(query, load().map { it.index.toString() }, 70),
         FuzzySearch.extractSorted(query, load().map { it.id }, 70)
     ).flatten().take(3).map {
@@ -38,5 +39,6 @@ data class Student(
     val index: Int = 0,
     val name: String,
     val id: String,
-    val combi: String
+    val combination: String,
+    val discord: String
 )
