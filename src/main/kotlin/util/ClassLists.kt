@@ -29,7 +29,7 @@ object ClassLists {
         FuzzySearch.extractSorted(query, load().map { it.id }, 70)
     ).flatten().take(3).map {
       load()[it.index]
-    }
+    }.distinct()
   }
 }
 

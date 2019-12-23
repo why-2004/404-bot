@@ -1,6 +1,7 @@
 package util
 
 import com.jessecorbett.diskord.api.rest.Embed
+import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.dsl.footer
 import de.vandermeer.asciitable.AsciiTable
 import de.vandermeer.asciitable.CWC_LongestWordMin
@@ -29,6 +30,26 @@ fun buildTable(data: List<Student>): String {
   table.renderer.cwc = CWC_LongestWordMin(listOf(3, 3, 15, 3).toIntArray())
   table.setTextAlignment(TextAlignment.CENTER)
   return "```" + table.render()!! + "```"
+}
+
+fun buildTableEmbed(data: List<Student>): List<EmbedField> {
+  return listOf(
+      EmbedField(
+          "No",
+          data.map { it.index }.joinToString("\n"),
+          true
+      ),
+      EmbedField(
+          "ID",
+          data.joinToString("\n") { it.id },
+          true
+      ),
+      EmbedField(
+          "Name",
+          data.joinToString("\n") { it.name },
+          true
+      )
+  )
 }
 
 @Serializable

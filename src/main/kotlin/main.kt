@@ -1,5 +1,6 @@
 import com.jessecorbett.diskord.api.exception.DiscordBadPermissionsException
 import com.jessecorbett.diskord.api.model.stringified
+import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.api.rest.MessageEdit
 import com.jessecorbett.diskord.dsl.bot
 import com.jessecorbett.diskord.dsl.command
@@ -8,10 +9,7 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.words
 import kotlinx.serialization.UnstableDefault
-import util.ClassLists
-import util.EmojiMappings
-import util.PaginatedList
-import util.buildTable
+import util.*
 import java.io.File
 
 val helpText = """
@@ -100,6 +98,20 @@ suspend fun main() {
           else
             "No results found"
 
+          color = if (result.isNotEmpty())
+            Colors.GREEN
+          else
+            Colors.RED
+        }
+      }
+      command("search:new") {
+        val query = words.drop(2).joinToString(" ")
+        val result = ClassLists.search(query)
+        println("new $query")
+        reply {
+          if (result.isEmpty())
+            description = "No results found"
+          fields = buildTableEmbed(result) as MutableList<EmbedField>
           color = if (result.isNotEmpty())
             Colors.GREEN
           else
