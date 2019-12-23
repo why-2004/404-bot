@@ -33,23 +33,23 @@ fun buildTable(data: List<Student>): String {
 }
 
 fun buildTableEmbed(data: List<Student>): List<EmbedField> {
-  return listOf(
-      EmbedField(
-          "No",
-          data.map { it.index }.joinToString("\n"),
-          true
-      ),
-      EmbedField(
-          "ID",
-          data.joinToString("\n") { it.id },
-          true
-      ),
-      EmbedField(
-          "Name",
-          data.joinToString("\n") { it.name },
-          true
-      )
-  )
+  return data.map {
+    EmbedField(
+        name = "**${it.name}**",
+        value = """
+          **No**
+          ${it.index}
+          
+          **Id**
+          ${it.id}
+          
+          **Combi**
+          ${it.combi}
+        """.trimIndent(),
+        inline = true
+    )
+  }
+
 }
 
 @Serializable
