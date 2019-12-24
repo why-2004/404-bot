@@ -7,10 +7,17 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
+import com.jessecorbett.diskord.util.sendMessage
 import com.jessecorbett.diskord.util.words
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import util.*
 import java.io.File
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.*
+import kotlin.concurrent.schedule
 
 val helpText = """
   Commands
@@ -144,9 +151,7 @@ suspend fun main() {
         else
           words.drop(2).joinToString(" ")
 
-        val result = ClassLists.load().firstOrNull {
-          it.discord.toLowerCase() == query.toLowerCase()
-        }
+        val result = ClassLists.getStudentByDiscordUsername(query)
         reply {
           if (result == null)
             description = "No results found"
@@ -160,6 +165,36 @@ suspend fun main() {
             Colors.GREEN
           else
             Colors.RED
+        }
+      }
+
+      command("poll:export") {
+        if (this.author.username != "jro") return@command
+        val channel = clientStore.channels[channelId]
+        val message = channel.getMessages(20)
+            .firstOrNull { it.author.username == "Pollmaster" && it.reactions.isNotEmpty() }
+        message ?: return@command kotlin.run {
+          reply("No poll found")
+        }
+        val botMessage = reply("Exporting poll data...")
+        val votes = message.reactions.map {
+          VoteOption(
+              channel.getMessageReactions(message.id, it.emoji)
+                  .filter { user ->
+                    !user.isBot && ClassLists.getStudentByDiscordUsername(user.username) != null
+                  }
+                  .map { user -> ClassLists.getStudentByDiscordUsername(user.username)!! },
+              it.emoji
+          )
+        }.dropLast(1)
+        val pollCode = message.embeds.first().author?.name?.substringAfter(">> ")
+            ?: UUID.randomUUID().toString()
+        SheetsApi.exportPoll(pollCode, votes) {
+          runBlocking {
+            channel.editMessage(botMessage.id, MessageEdit(
+                "Results for poll $pollCode:\n$it"
+            ))
+          }
         }
       }
     }

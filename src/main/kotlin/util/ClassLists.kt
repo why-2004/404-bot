@@ -32,6 +32,12 @@ object ClassLists {
       load()[it.index]
     }.distinct()
   }
+
+  fun getStudentByDiscordUsername(query: String) =
+      load().firstOrNull {
+        it.discord.toLowerCase() == query.toLowerCase()
+      }
+
 }
 
 @Serializable
