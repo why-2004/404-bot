@@ -18,13 +18,13 @@ object EmojiMappings {
   const val eyes = "\uD83D\uDC40"
 }
 
-fun buildTable(data: List<Student>): String {
+fun buildTable(data: List<Student>, discord: Boolean = false): String {
   val table = AsciiTable()
   table.addRule()
-  table.addRow("No", "ID", "Name", "Combi")
+  table.addRow("No", "ID", "Name", if (discord) "Username" else "Combi")
   table.addRule()
   data.forEach {
-    table.addRow(it.index, it.id, it.name, it.combination)
+    table.addRow(it.index, it.id, it.name, if (discord) it.combination else it.discord)
     table.addRule()
   }
   table.renderer.cwc = CWC_LongestWordMin(listOf(3, 3, 15, 3).toIntArray())
@@ -57,13 +57,19 @@ fun buildTableEmbed(data: List<Student>): List<EmbedField> {
 data class PaginatedList(
     val userId: String,
     val messageId: String,
-    val paginateNumber: Int
+    val paginateNumber: Int,
+    val indexes: List<Int> = listOf()
 ) {
   var counter = -1
     private set
 
   fun next(): Boolean {
-    if ((counter + 1) * paginateNumber <= ClassLists.load().size) {
+    val data = if (indexes.isEmpty())
+      ClassLists.load()
+    else
+      ClassLists.load().filter { it.index in indexes }
+
+    if ((counter + 1) * paginateNumber <= data.size) {
       counter++
       return true
     }
@@ -79,7 +85,11 @@ data class PaginatedList(
   }
 
   fun generate(generator: (List<Student>) -> Embed): Embed {
-    val data = ClassLists.load()
+    val data = if (indexes.isEmpty())
+      ClassLists.load()
+    else
+      ClassLists.load().filter { it.index in indexes }
+
     val currentData = data.subList(
         counter * paginateNumber,
         min(counter * paginateNumber + paginateNumber, data.size)

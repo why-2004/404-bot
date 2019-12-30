@@ -7,17 +7,12 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
-import com.jessecorbett.diskord.util.sendMessage
 import com.jessecorbett.diskord.util.words
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import util.*
 import java.io.File
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.concurrent.schedule
 
 val helpText = """
   Commands
@@ -166,6 +161,37 @@ suspend fun main() {
           else
             Colors.RED
         }
+      }
+
+      command("members") {
+        val guildId = this.guildId ?: return@command
+        val indexes = clientStore.guilds[guildId].getMembers(50)
+            .filter { !(it.user?.isBot ?: true) }.mapNotNull {
+              ClassLists.getStudentByDiscordUsername(it.user?.username!!)?.index
+            }
+        val list = PaginatedList(
+            "0",
+            "0",
+            10,
+            indexes
+            )
+        list.next()
+        val message = reply("", list.generate {
+          embed {
+            description = buildTable(it, true)
+            color = Colors.GREEN
+          }
+        })
+        message.react(EmojiMappings.arrowLeft)
+        message.react(EmojiMappings.trash)
+        message.react(EmojiMappings.arrowRight)
+
+        val newList = list.copy(
+            messageId = message.id,
+            userId = author.id
+        )
+        newList.next()
+        Database[message.id] = newList
       }
 
       command("poll:export") {
