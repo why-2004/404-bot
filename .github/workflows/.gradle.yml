@@ -19,6 +19,6 @@ jobs:
           ./gradlew clean
           ./gradlew shadowJar
       - uses: actions/upload-artifact@v1
-          with:
-            name: 404bot.jar
-            path: build/libs
+        with:
+          name: 404bot.jar
+          path: build/libs
