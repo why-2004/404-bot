@@ -8,9 +8,11 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.words
+import kotlinx.serialization.UnstableDefault
 import util.*
 
 object Classlist : Command {
+  @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
     with(bot) {
       with(prefix) {

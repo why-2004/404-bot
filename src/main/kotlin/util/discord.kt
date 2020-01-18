@@ -16,6 +16,8 @@ object EmojiMappings {
   const val arrowRight = "▶"
   const val arrowLeft = "◀"
   const val eyes = "\uD83D\uDC40"
+  const val ok = "\uD83D\uDC4C"
+  const val cross = "❎"
 }
 
 fun buildTable(data: List<Student>, discord: Boolean = false): String {

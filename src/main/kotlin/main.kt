@@ -7,6 +7,7 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.words
 import commands.Classlist
 import commands.Poll
+import commands.Reminders
 import kotlinx.serialization.UnstableDefault
 import util.*
 import java.io.File
@@ -41,6 +42,7 @@ suspend fun main() {
       }
       Classlist.init(this@bot, this)
       Poll.init(this@bot, this)
+      Reminders.init(this@bot, this)
     }
 
     Reactions.init(this)
