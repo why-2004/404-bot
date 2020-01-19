@@ -1,17 +1,12 @@
-import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.dsl.bot
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
-import com.jessecorbett.diskord.dsl.embed
-import com.jessecorbett.diskord.util.Colors
-import com.jessecorbett.diskord.util.words
 import commands.Classlist
+import commands.HwBot
 import commands.Poll
 import commands.Reminders
 import kotlinx.serialization.UnstableDefault
-import util.*
 import java.io.File
-import java.util.*
 
 val helpText = """
   Commands
@@ -43,6 +38,10 @@ suspend fun main() {
       Classlist.init(this@bot, this)
       Poll.init(this@bot, this)
       Reminders.init(this@bot, this)
+    }
+
+    commands("!hwbot "){
+      HwBot.init(this@bot, this)
     }
 
     Reactions.init(this)
