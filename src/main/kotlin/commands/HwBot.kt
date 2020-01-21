@@ -24,6 +24,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.*
+import java.util.Calendar.HOUR_OF_DAY
+
 
 object HwBot : Command {
   private val hwFile = File("../hwboard2/data/homework.json")
@@ -70,6 +72,15 @@ object HwBot : Command {
                   ?.firstOrNull()
                   ?.dates
                   ?.firstOrNull()
+                  ?.run {
+                    val cal = GregorianCalendar()
+                    cal.time = this
+                    cal[HOUR_OF_DAY] = 23
+                    cal[Calendar.MINUTE] = 59
+                    cal[Calendar.SECOND] = 59
+                    cal[Calendar.MILLISECOND] = 999
+                    cal.time
+                  }
                   ?: return@command bot reject this
 
           val name = query.getOrNull(2)?.makeNullIfEmpty()
