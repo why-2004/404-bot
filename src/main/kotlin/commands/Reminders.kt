@@ -37,7 +37,7 @@ object Reminders : Command {
                   .map {
                     EmbedField(
                             name = "**${it.message}**",
-                            value = SimpleDateFormat("D/M/y H:mm:ss").format(isoTimeFormat.parse(it.time)),
+                            value = SimpleDateFormat("dd/M/y H:mm:ss").format(isoTimeFormat.parse(it.time)),
                             inline = false
                     )
                   }
