@@ -1,10 +1,12 @@
 package commands
 
+import com.github.shyiko.skedule.Schedule
 import com.hwboard.DiscordUser
 import com.hwboard.Homework
 import com.hwboard.Subject
 import com.hwboard.Tag
 import com.jessecorbett.diskord.api.model.Message
+import com.jessecorbett.diskord.api.rest.CreateMessage
 import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
@@ -14,21 +16,24 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.joestelmach.natty.Parser
+import commands.Reminders.dmUser
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
+import kotlinx.serialization.serializer
 import util.EmojiMappings
 import java.io.File
 import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
+import java.time.*
 import java.util.*
 import java.util.Calendar.HOUR_OF_DAY
+import kotlin.concurrent.fixedRateTimer
 
 
 object HwBot : Command {
   private val hwFile = File("../hwboard2/data/homework.json")
+  private val subscribersFile = File("secrets/subscribers.json")
   private val subjects = listOf(
           "Math",
           "English",
@@ -49,6 +54,33 @@ object HwBot : Command {
 
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
+    fixedRateTimer(
+            UUID.randomUUID().toString(),
+            false,
+            (Schedule.at(LocalTime.of(19, 0))
+                    .everyDay()
+                    .next(ZonedDateTime.now())
+                    .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
+            8.64e+7.toLong()
+    ) {
+      val dayOfWeek = ZonedDateTime.now().dayOfWeek
+      if (dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) return@fixedRateTimer
+      val subscribers = Json.plain.parse(Long.serializer().list, subscribersFile.readText().trim())
+      val homework = getHomework().filter { it.dueDate.date.toDate().isTomorrow() }
+      val embed = buildHomeworkEmbeds(homework).firstOrNull() ?: embed {
+        title = "There is no homework tomorrow"
+        color = Colors.GREEN
+      }
+      subscribers.forEach {
+        runBlocking {
+          dmUser(bot, it, CreateMessage(content = "", embed = embed))
+        }
+      }
+    }
+    if (!subscribersFile.exists()) {
+      subscribersFile.createNewFile()
+      subscribersFile.writeText("[]")
+    }
     with(bot) {
       with(prefix) {
         command("show") {
@@ -57,7 +89,18 @@ object HwBot : Command {
         }
         command("tomorrow") {
           val homework = getHomework().filter { it.dueDate.date.toDate().isTomorrow() }
-          buildHomeworkEmbeds(homework).forEach { reply("", embed = it) }
+          val embed = buildHomeworkEmbeds(homework).firstOrNull() ?: embed {
+            title = "There is no homework tomorrow"
+            color = Colors.GREEN
+          }
+          reply("", embed = embed)
+        }
+        command("subscribe") {
+          if (guildId != null) return@command bot reject this
+          val subscribers = Json.plain.parse(Long.serializer().list, subscribersFile.readText().trim())
+          val newSubscribers = (subscribers + (authorId.toLong())).distinct()
+          subscribersFile.writeText(Json.plain.stringify(Long.serializer().list, newSubscribers))
+          bot accept this
         }
 
         command("add:quick") {
