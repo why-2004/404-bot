@@ -7,7 +7,9 @@ import com.hwboard.Subject
 import com.hwboard.Tag
 import com.jessecorbett.diskord.api.model.Message
 import com.jessecorbett.diskord.api.rest.CreateMessage
+import com.jessecorbett.diskord.api.rest.Embed
 import com.jessecorbett.diskord.api.rest.EmbedField
+import com.jessecorbett.diskord.api.rest.MessageEdit
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
 import com.jessecorbett.diskord.dsl.command
@@ -34,6 +36,7 @@ import kotlin.concurrent.fixedRateTimer
 object HwBot : Command {
   private val hwFile = File("../hwboard2/data/homework.json")
   private val subscribersFile = File("secrets/subscribers.json")
+  private val permanentFile = File("secrets/permanent")
   private val subjects = listOf(
           "Math",
           "English",
@@ -64,9 +67,9 @@ object HwBot : Command {
             8.64e+7.toLong()
     ) {
       val dayOfWeek = ZonedDateTime.now().dayOfWeek
-      if (dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) return@fixedRateTimer
       val subscribers = Json.plain.parse(Long.serializer().list, subscribersFile.readText().trim())
       val homework = getHomework().filter { it.dueDate.date.toDate().isTomorrow() }
+      if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && homework.isEmpty()) return@fixedRateTimer
       val embed = buildHomeworkEmbeds(homework).firstOrNull() ?: embed {
         title = "There is no homework tomorrow"
         color = Colors.GREEN
@@ -77,6 +80,22 @@ object HwBot : Command {
         }
       }
     }
+    fixedRateTimer(
+            UUID.randomUUID().toString(),
+            false,
+            0L,
+            3.6e+6.toLong()
+    ) {
+      if (!permanentFile.exists()) return@fixedRateTimer
+      val (id, channelId) = permanentFile.readText().trim().split(",")
+      val homework = getHomework()
+      runBlocking {
+        bot.clientStore.channels[channelId].editMessage(id, MessageEdit(
+                content = "",
+                embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed())
+        ))
+      }
+    }
     if (!subscribersFile.exists()) {
       subscribersFile.createNewFile()
       subscribersFile.writeText("[]")
@@ -85,7 +104,15 @@ object HwBot : Command {
       with(prefix) {
         command("show") {
           val homework = getHomework()
-          buildHomeworkEmbeds(homework).forEach { reply("", embed = it) }
+          reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed()))
+        }
+        command("permanent") {
+          if (permanentFile.exists()) return@command bot reject this
+          val homework = getHomework()
+          val id = reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed())).id
+          bot accept this
+          permanentFile.createNewFile()
+          permanentFile.writeText("$id,$channelId")
         }
         command("tomorrow") {
           val homework = getHomework().filter { it.dueDate.date.toDate().isTomorrow() }
@@ -194,6 +221,18 @@ object HwBot : Command {
                       } as MutableList<EmbedField>
                     }
                   }
+
+  private fun combineEmbeds(embeds: List<Embed>) = embed {
+    color = Colors.GREEN
+    title = "Homework"
+    fields = embeds.map {
+      val fields = mutableListOf<EmbedField>()
+      val title = it.title!!
+      fields += EmbedField("-----------\n", "__**${title.substringAfter("on ")}**__", false)
+      fields += it.fields
+      fields
+    }.flatten() as MutableList<EmbedField>
+  }
 
   private fun String.toDate() = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").parse(this)
   private fun Date.toDate() = com.hwboard.Date(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this))
