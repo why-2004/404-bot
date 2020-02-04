@@ -228,7 +228,7 @@ object HwBot : Command {
     fields = embeds.map {
       val fields = mutableListOf<EmbedField>()
       val title = it.title!!
-      fields += EmbedField("-----------\n", "__**${title.substringAfter("on ")}**__", false)
+      fields += EmbedField("-------------------------\n", "__**${title.substringAfter("on ")}**__", false)
       fields += it.fields
       fields
     }.flatten() as MutableList<EmbedField>
