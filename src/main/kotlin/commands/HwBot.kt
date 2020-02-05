@@ -1,10 +1,7 @@
 package commands
 
 import com.github.shyiko.skedule.Schedule
-import com.hwboard.DiscordUser
-import com.hwboard.Homework
-import com.hwboard.Subject
-import com.hwboard.Tag
+import com.hwboard.*
 import com.jessecorbett.diskord.api.model.Message
 import com.jessecorbett.diskord.api.rest.CreateMessage
 import com.jessecorbett.diskord.api.rest.Embed
@@ -30,6 +27,7 @@ import java.text.SimpleDateFormat
 import java.time.*
 import java.util.*
 import java.util.Calendar.HOUR_OF_DAY
+import java.util.Date
 import kotlin.concurrent.fixedRateTimer
 
 
@@ -54,7 +52,7 @@ object HwBot : Command {
   )
   private val tagNames = listOf("Graded", "Project", "Optional")
   private val announcementRoles = File("secrets/tokens/announcementRoles").readText().trim().split(",")
-
+  private val state = mutableMapOf<String, HomeworkNullable>()
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
     fixedRateTimer(
@@ -76,7 +74,16 @@ object HwBot : Command {
       }
       subscribers.forEach {
         runBlocking {
-          dmUser(bot, it, CreateMessage(content = "", embed = embed))
+          if (it == 282108880224256008L) {
+            dmUser(bot, it, CreateMessage(content = "", embed =
+            buildHomeworkEmbeds(homework.filter { "chinese" !in it.subject.name.toLowerCase() }).firstOrNull()
+                    ?: embed {
+                      title = "There is no homework tomorrow"
+                      color = Colors.GREEN
+                    }))
+          } else {
+            dmUser(bot, it, CreateMessage(content = "", embed = embed))
+          }
         }
       }
     }
@@ -92,7 +99,7 @@ object HwBot : Command {
       runBlocking {
         bot.clientStore.channels[channelId].editMessage(id, MessageEdit(
                 content = "",
-                embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed())
+                embed = combineEmbeds(buildHomeworkEmbeds(homework))
         ))
       }
     }
@@ -104,12 +111,12 @@ object HwBot : Command {
       with(prefix) {
         command("show") {
           val homework = getHomework()
-          reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed()))
+          reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework)))
         }
         command("permanent") {
           if (permanentFile.exists()) return@command bot reject this
           val homework = getHomework()
-          val id = reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework).reversed())).id
+          val id = reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework))).id
           bot accept this
           permanentFile.createNewFile()
           permanentFile.writeText("$id,$channelId")
@@ -130,6 +137,23 @@ object HwBot : Command {
           bot accept this
         }
 
+        command("add") {
+          if (clientStore.guilds[announcementChannelData.first()].getMember(authorId).roleIds
+                          .intersect(announcementRoles).isEmpty() || guildId != null
+          ) return@command bot reject this
+          val processState = state[authorId]
+          if (processState == null) {
+            state[authorId] = HomeworkNullable(id = UUID.randomUUID().toString())
+            reply("Please enter subject: ", embed {
+              color = Colors.CYAN
+              fields = mutableListOf(EmbedField("Subjects", subjects.mapIndexed { index, s ->
+                "$index | $s"
+              }.joinToString("\n"), false))
+            })
+          } else {
+            return@command bot reject this
+          }
+        }
         command("add:quick") {
           if (clientStore.guilds[announcementChannelData.first()].getMember(authorId).roleIds
                           .intersect(announcementRoles).isEmpty() || guildId != null
@@ -145,7 +169,7 @@ object HwBot : Command {
                   ?.run {
                     val cal = GregorianCalendar()
                     cal.time = this
-                    cal[HOUR_OF_DAY] = 23
+                    cal[HOUR_OF_DAY] = 22
                     cal[Calendar.MINUTE] = 59
                     cal[Calendar.SECOND] = 59
                     cal[Calendar.MILLISECOND] = 999
