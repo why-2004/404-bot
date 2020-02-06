@@ -1,7 +1,6 @@
 package com.hwboard
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.toUtf8Bytes
 
 @Serializable
 data class Homework(
@@ -16,13 +15,16 @@ data class Homework(
 
 data class HomeworkNullable(
         val id: String = "",
-        val subject: Subject = Subject(""),
+        val subject: Subject? = null,
         val dueDate: Date? = null,
         val text: String = "",
-        val tags: List<Tag> = emptyList(),
+        val tags: List<Tag>? = null,
         val lastEditPerson: User? = null,
-        val lastEditTime: Date?  = null
-)
+        val lastEditTime: Date? = null
+) {
+  fun toHomework() =
+          Homework(id, subject!!, dueDate!!, text, tags!!, lastEditPerson!!, lastEditTime!!)
+}
 
 @Serializable
 data class Subject(val name: String)

@@ -13,6 +13,7 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
+import com.jessecorbett.diskord.util.sendMessage
 import com.jessecorbett.diskord.util.words
 import com.joestelmach.natty.Parser
 import commands.Reminders.dmUser
@@ -144,7 +145,7 @@ object HwBot : Command {
           val processState = state[authorId]
           if (processState == null) {
             state[authorId] = HomeworkNullable(id = UUID.randomUUID().toString())
-            reply("Please enter subject: ", embed {
+            reply("Please enter subject number: ", embed {
               color = Colors.CYAN
               fields = mutableListOf(EmbedField("Subjects", subjects.mapIndexed { index, s ->
                 "$index | $s"
@@ -162,19 +163,7 @@ object HwBot : Command {
           val subject = subjects.getOrNull(query.firstOrNull()?.toIntOrNull()
                   ?: -1) ?: return@command bot reject this
 
-          val dueDate = Parser().parse(query.getOrNull(1))
-                  ?.firstOrNull()
-                  ?.dates
-                  ?.firstOrNull()
-                  ?.run {
-                    val cal = GregorianCalendar()
-                    cal.time = this
-                    cal[HOUR_OF_DAY] = 22
-                    cal[Calendar.MINUTE] = 59
-                    cal[Calendar.SECOND] = 59
-                    cal[Calendar.MILLISECOND] = 999
-                    cal.time
-                  }
+          val dueDate = query.getOrNull(1)?.let { parseDate(it) }
                   ?: return@command bot reject this
 
           val name = query.getOrNull(2)?.makeNullIfEmpty()
@@ -202,6 +191,53 @@ object HwBot : Command {
           bot accept this
         }
       }
+      messageCreated { it ->
+        val userState = state[it.authorId] ?: return@messageCreated
+        when {
+          userState.subject == null -> {
+            val index = it.content.toIntOrNull() ?: return@messageCreated run {
+              clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${subjects.lastIndex}")
+            }
+            if (index !in 0..(subjects.lastIndex))
+              return@messageCreated run {
+                clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${subjects.lastIndex}")
+              }
+            state [it.authorId] = userState.copy(subject = Subject(subjects[index]))
+            clientStore.channels[it.channelId].sendMessage("Please enter due date.")
+          }
+          userState.dueDate == null -> {
+            val date = parseDate(it.content)
+                    ?: return@messageCreated run {
+                      clientStore.channels[it.channelId].sendMessage("Please enter a valid due date.")
+                    }
+            state[it.authorId] = userState.copy(dueDate = date.toDate())
+            clientStore.channels[it.channelId].sendMessage("Please enter homework text.")
+          }
+          userState.text.isEmpty() -> {
+            val text = it.content
+            state[it.authorId] = userState.copy(text = text)
+            clientStore.channels[it.channelId].sendMessage("Please enter tags numbers, separated by commas. Enter '-' for no tags.", embed {
+              color = Colors.CYAN
+              fields = mutableListOf(EmbedField("Tags", tags.mapIndexed { index, s ->
+                "$index | ${s.name}"
+              }.joinToString("\n"), false))
+            })
+          }
+          userState.tags == null -> {
+            state[it.authorId] = userState.copy(tags = it.content.split(",")
+                    .map { it.trim().toIntOrNull() }
+                    .filter { it in 0..2 }
+                    .map { tags[it!!] })
+            state[it.authorId] = state[it.authorId]!!.copy(
+                    lastEditPerson = DiscordUser(it.author.username, it.authorId, read = true, write = true),
+                    lastEditTime = Date().toDate()
+            )
+            addHomework(state[it.authorId]!!.toHomework())
+            state.remove(it.authorId)
+            clientStore.channels[it.channelId].sendMessage("Homework added successfully")
+          }
+        }
+      }
     }
   }
 
@@ -212,6 +248,23 @@ object HwBot : Command {
             Json.indented.stringify(Homework.serializer().list, homeworkList + homework)
     )
   }
+
+  private fun parseDate(date: String) = Parser().parse(date)
+          ?.firstOrNull()
+          ?.dates
+          ?.firstOrNull()
+          ?.let {
+            if (it.isFuture()) it else null
+          }
+          ?.run {
+            val cal = GregorianCalendar()
+            cal.time = this
+            cal[HOUR_OF_DAY] = 22
+            cal[Calendar.MINUTE] = 59
+            cal[Calendar.SECOND] = 59
+            cal[Calendar.MILLISECOND] = 999
+            cal.time
+          }
 
   private suspend infix fun Bot.reject(message: Message) =
           clientStore.channels[message.channelId].addMessageReaction(message.id, EmojiMappings.cross)
