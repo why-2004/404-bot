@@ -26,6 +26,7 @@ import util.EmojiMappings
 import java.io.File
 import java.text.SimpleDateFormat
 import java.time.*
+import java.time.temporal.TemporalAdjusters.next
 import java.util.*
 import java.util.Calendar.HOUR_OF_DAY
 import java.util.Date
@@ -52,7 +53,6 @@ object HwBot : Command {
           Tag("Optional", "#4cd964"),
           Tag("Assessment", "#f18e33")
   )
-  private val tagNames = listOf("Graded", "Project", "Optional")
   private val announcementRoles = File("secrets/tokens/announcementRoles").readText().trim().split(",")
   private val state = mutableMapOf<String, HomeworkNullable>()
   @UnstableDefault
@@ -280,19 +280,26 @@ object HwBot : Command {
           Json.indented.parse(Homework.serializer().list, hwFile.readText())
                   .filter { it.dueDate.date.toDate().isFuture() }
 
-  private fun buildHomeworkEmbeds(homework: List<Homework>) =
-          homework.sortedBy { it.dueDate.date }
+  private fun buildHomeworkEmbeds(homeworks: List<Homework>) =
+          homeworks.sortedBy { it.dueDate.date }
                   .groupBy { it.dueDate.date.substringBefore("T") }
                   .map {
+                    val date = it.key.toDateSimple()
+                    val dueDateDisplay = when {
+                      date.isTomorrow() -> "Due tomorrow"
+                      date.isToday() -> "Due today"
+                      date.isThisWeek() -> "Due ${date.dayOfWeek}"
+                      else -> "Due ${it.key}"
+                    }
                     embed {
-                      title = "Homework due on " + it.key
+                      title = dueDateDisplay
                       color = Colors.GREEN
-                      fields = it.value.map {
+                      fields = it.value.map { homework ->
                         EmbedField(
-                                "**${it.text}**",
-                                "${it.subject.name}\n" +
-                                        if (it.tags.isNotEmpty())
-                                          "(${it.tags.joinToString(", ") { tag -> tag.name }})"
+                                "**${homework.text}**",
+                                "${homework.subject.name}\n" +
+                                        if (homework.tags.isNotEmpty())
+                                          "(${homework.tags.joinToString(", ") { tag -> tag.name }})"
                                         else "",
                                 inline = false
                         )
@@ -306,17 +313,29 @@ object HwBot : Command {
     fields = embeds.map {
       val fields = mutableListOf<EmbedField>()
       val title = it.title!!
-      fields += EmbedField("-------------------------\n", "__**${title.substringAfter("on ")}**__", false)
+      fields += EmbedField("-------------------------\n", "__**$title**__", false)
       fields += it.fields
       fields
     }.flatten() as MutableList<EmbedField>
   }
 
+  private fun String.toDateSimple() = SimpleDateFormat("yyyy-MM-dd").parse(this)
   private fun String.toDate() = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").parse(this)
   private fun Date.toDate() = com.hwboard.Date(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this))
   private fun Date.isFuture() = this.after(Date.from(Instant.now()))
-  private fun Date.isTomorrow() = this.toInstant()
+  private fun Date.toLocalDate() = this.toInstant()
           .atZone(ZoneId.systemDefault())
           .toLocalDate()
+
+  private fun Date.isTomorrow() = this.toLocalDate()
           .isEqual(LocalDate.now().plusDays(1))
+
+  private fun Date.isToday() = this.toLocalDate()
+          .isEqual(LocalDate.now())
+
+  private fun Date.isThisWeek() = this.toLocalDate()
+          .isBefore(LocalDate.now().with(next(DayOfWeek.SUNDAY)))
+
+  val Date.dayOfWeek: DayOfWeek
+    get() = this.toLocalDate().dayOfWeek
 }
