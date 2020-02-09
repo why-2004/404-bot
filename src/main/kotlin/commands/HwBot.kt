@@ -288,7 +288,7 @@ object HwBot : Command {
                     val dueDateDisplay = when {
                       date.isTomorrow() -> "Due tomorrow"
                       date.isToday() -> "Due today"
-                      date.isThisWeek() -> "Due ${date.dayOfWeek}"
+                      date.isThisWeek() -> "Due ${date.dayOfWeek.toString().toLowerCase().capitalize()}"
                       else -> "Due ${it.key}"
                     }
                     embed {
