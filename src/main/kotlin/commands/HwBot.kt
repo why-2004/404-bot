@@ -49,7 +49,8 @@ object HwBot : Command {
   private val tags = listOf(
           Tag("Graded", "red"),
           Tag("Project", "#ffcc00"),
-          Tag("Optional", "#4cd964")
+          Tag("Optional", "#4cd964"),
+          Tag("Assessment", "#f18e33")
   )
   private val tagNames = listOf("Graded", "Project", "Optional")
   private val announcementRoles = File("secrets/tokens/announcementRoles").readText().trim().split(",")
@@ -202,7 +203,7 @@ object HwBot : Command {
               return@messageCreated run {
                 clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${subjects.lastIndex}")
               }
-            state [it.authorId] = userState.copy(subject = Subject(subjects[index]))
+            state[it.authorId] = userState.copy(subject = Subject(subjects[index]))
             clientStore.channels[it.channelId].sendMessage("Please enter due date.")
           }
           userState.dueDate == null -> {
