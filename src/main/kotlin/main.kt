@@ -1,10 +1,7 @@
 import com.jessecorbett.diskord.dsl.bot
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
-import commands.Classlist
-import commands.HwBot
-import commands.Poll
-import commands.Reminders
+import commands.*
 import kotlinx.serialization.UnstableDefault
 import java.io.File
 
@@ -44,6 +41,7 @@ suspend fun main() {
       HwBot.init(this@bot, this)
     }
 
+    Pin.init(this)
     Reactions.init(this)
   }
 }
