@@ -21,6 +21,18 @@ object Pin {
           }
         }
       }
+
+      reactionRemoved {
+        if (it.emoji.stringified == "\uD83D\uDCCC") {
+          val message = bot.clientStore.channels[it.channelId].getMessage(it.messageId)
+          with(message) {
+            if (clientStore.guilds[announcementChannelData.first()].getMember(authorId).roleIds
+                            .intersect(HwBot.announcementRoles).isEmpty() || guildId != null
+            ) return@reactionRemoved
+            bot.clientStore.channels[it.channelId].unpinMessage(id)
+          }
+        }
+      }
     }
   }
 }
