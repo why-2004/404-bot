@@ -1,4 +1,4 @@
-package util
+package com.junron.bot404.util
 
 import com.github.shyiko.skedule.Schedule
 import com.hwboard.Homework
@@ -11,7 +11,7 @@ import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.joestelmach.natty.Parser
-import commands.Reminders
+import com.junron.bot404.config
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
@@ -24,9 +24,9 @@ import java.time.temporal.TemporalAdjusters
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
-private val hwFile = File("../hwboard2/data/homework.json")
-val subscribersFile = File("secrets/subscribers.json")
-val permanentFile = File("secrets/permanent")
+private val hwFile = File(config.homeworkFile)
+val subscribersFile = File("data/subscribers.json")
+val permanentFile = File("data/permanent")
 val subjects = listOf(
         "Math",
         "English",
@@ -109,6 +109,7 @@ val Date.dayOfWeek: DayOfWeek
   get() = this.toLocalDate().dayOfWeek
 
 
+@UnstableDefault
 fun init(bot: Bot) {
   fixedRateTimer(
           UUID.randomUUID().toString(),
@@ -120,7 +121,7 @@ fun init(bot: Bot) {
           8.64e+7.toLong()
   ) {
     val dayOfWeek = ZonedDateTime.now().dayOfWeek
-    val subscribers = Json.plain.parse(Long.serializer().list, subscribersFile.readText().trim())
+    val subscribers = Json.parse(Long.serializer().list, subscribersFile.readText().trim())
     if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && getHomework().tomorrow.isEmpty()) return@fixedRateTimer
     val embed = buildHomeworkEmbeds(getHomework().tomorrow).firstOrNull()
             ?: embed {
@@ -129,7 +130,7 @@ fun init(bot: Bot) {
             }
     subscribers.forEach {
       runBlocking {
-        Reminders.dmUser(bot, it, CreateMessage(content = "", embed = embed))
+        Reminders.dmUser(bot, it.toString(), CreateMessage(content = "", embed = embed))
       }
     }
   }
@@ -149,9 +150,9 @@ fun init(bot: Bot) {
 
 @UnstableDefault
 fun addHomework(homework: Homework) {
-  val homeworkList = Json.indented.parse(Homework.serializer().list, hwFile.readText())
+  val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
-          Json.indented.stringify(Homework.serializer().list, homeworkList + homework)
+          Json.stringify(Homework.serializer().list, homeworkList + homework)
   )
 }
 
@@ -172,6 +173,7 @@ fun parseDate(date: String) = Parser().parse(date)
           cal.time
         }
 
+@UnstableDefault
 fun updatePermanent(bot: Bot) {
   if (!permanentFile.exists()) return
   val (id, channelId) = permanentFile.readText().trim().split(",")

@@ -1,4 +1,4 @@
-package commands
+package com.junron.bot404.commands
 
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet

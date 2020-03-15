@@ -1,9 +1,8 @@
-package commands
+package com.junron.bot404.commands
 
 import com.hwboard.DiscordUser
 import com.hwboard.HomeworkNullable
 import com.hwboard.Subject
-import com.jessecorbett.diskord.api.model.Message
 import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
@@ -12,18 +11,17 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.sendMessage
+import com.junron.bot404.config
+import com.junron.bot404.util.*
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
-import util.*
-import java.io.File
 import java.util.*
 
 
 object HwBot : Command {
 
-  val announcementRoles = File("secrets/tokens/announcementRoles").readText().trim().split(",")
   private val state = mutableMapOf<String, HomeworkNullable>()
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
@@ -53,15 +51,15 @@ object HwBot : Command {
         }
         command("subscribe") {
           if (guildId != null) return@command bot reject this
-          val subscribers = Json.plain.parse(Long.serializer().list, subscribersFile.readText().trim())
+          val subscribers = Json.parse(Long.serializer().list, subscribersFile.readText().trim())
           val newSubscribers = (subscribers + (authorId.toLong())).distinct()
-          subscribersFile.writeText(Json.plain.stringify(Long.serializer().list, newSubscribers))
+          subscribersFile.writeText(Json.stringify(Long.serializer().list, newSubscribers))
           bot accept this
         }
 
         command("add") {
-          if (clientStore.guilds[announcementChannelData.first()].getMember(authorId).roleIds
-                          .intersect(announcementRoles).isEmpty() || guildId != null
+          if (clientStore.guilds[config.guild].getMember(authorId).roleIds
+                          .intersect(config.announcementRoles).isEmpty() || guildId != null
           ) return@command bot reject this
           val processState = state[authorId]
           if (processState == null) {
@@ -128,11 +126,4 @@ object HwBot : Command {
       }
     }
   }
-
-  suspend infix fun Bot.reject(message: Message) =
-          clientStore.channels[message.channelId].addMessageReaction(message.id, EmojiMappings.cross)
-
-  suspend infix fun Bot.accept(message: Message) =
-          clientStore.channels[message.channelId].addMessageReaction(message.id, EmojiMappings.ok)
-
 }
