@@ -6,11 +6,25 @@ Bot for M20404
 ### `!404 ping`
   Check if server is alive
   
-###  `!404 search <name|id|index no>`
-  Search class list for student
+###  `!404 help`
+  Displays this message
 
-###  `!404 classlist`
-  Print full classlist
+###  `!hwbot show`
+  Displays all homework
   
-### `!404 whois <mention|discord username>`
-  Prints information about mentioned user
+###  `!hwbot tomorrow`
+  Displays homework due tomorrow
+  
+###  `!hwbot subscribe`
+  Subscribe to daily homework reminders at 7pm.  
+  Only valid in DMs.  
+  There will be no reminders on Friday and Saturday
+  unless there is homework due on the following day.
+    
+###  `!hwbot permanent`
+  Displays homework with automatic updates.
+  
+###  `!hwbot add`
+  Add homework interactively.  
+  Only valid in DMs.  
+  Admin permission required.  

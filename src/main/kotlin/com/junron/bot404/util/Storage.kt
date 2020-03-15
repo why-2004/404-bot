@@ -11,8 +11,8 @@ import java.io.File
 
 
 class Storage<T>(
-        val name: String,
-        internal val serializer: KSerializer<T>,
+        name: String,
+        private val serializer: KSerializer<T>,
         private val items: MutableList<ItemWrapper<T>> = mutableListOf()
 ) : List<ItemWrapper<T>> by items {
   private val storageFile = File("data/$name.json")

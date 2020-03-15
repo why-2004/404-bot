@@ -13,10 +13,8 @@ import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.sendMessage
 import com.junron.bot404.config
 import com.junron.bot404.util.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.list
-import kotlinx.serialization.serializer
 import java.util.*
 
 
@@ -34,12 +32,9 @@ object HwBot : Command {
           reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework)))
         }
         command("permanent") {
-          if (permanentFile.exists()) return@command bot reject this
           val homework = getHomework()
           val id = reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework))).id
-          bot accept this
-          permanentFile.createNewFile()
-          permanentFile.writeText("$id,$channelId")
+          permanentMessageStorage += PermanentMessage(channelId, id)
         }
         command("tomorrow") {
           val homework = getHomework().tomorrow
@@ -51,23 +46,21 @@ object HwBot : Command {
         }
         command("subscribe") {
           if (guildId != null) return@command bot reject this
-          val subscribers = Json.parse(Long.serializer().list, subscribersFile.readText().trim())
-          val newSubscribers = (subscribers + (authorId.toLong())).distinct()
-          subscribersFile.writeText(Json.stringify(Long.serializer().list, newSubscribers))
+          subscribers += authorId.toLong()
           bot accept this
         }
 
         command("add") {
           if (clientStore.guilds[config.guild].getMember(authorId).roleIds
-                          .intersect(config.announcementRoles).isEmpty() || guildId != null
+                          .intersect(config.adminRoleIds).isEmpty() || guildId != null
           ) return@command bot reject this
           val processState = state[authorId]
           if (processState == null) {
             state[authorId] = HomeworkNullable(id = UUID.randomUUID().toString())
             reply("Please enter subject number: ", embed {
               color = Colors.CYAN
-              fields = mutableListOf(EmbedField("Subjects", subjects.mapIndexed { index, s ->
-                "$index | $s"
+              fields = mutableListOf(EmbedField("Subjects", config.subjects.mapIndexed { index, s ->
+                "`$index` | $s"
               }.joinToString("\n"), false))
             })
           } else {
@@ -81,13 +74,13 @@ object HwBot : Command {
           userState.subject == null -> {
             val index = it.content.toIntOrNull()
                     ?: return@messageCreated run {
-                      clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${subjects.lastIndex}")
+                      clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${config.subjects.lastIndex}")
                     }
-            if (index !in 0..(subjects.lastIndex))
+            if (index !in 0..(config.subjects.lastIndex))
               return@messageCreated run {
-                clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${subjects.lastIndex}")
+                clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${config.subjects.lastIndex}")
               }
-            state[it.authorId] = userState.copy(subject = Subject(subjects[index]))
+            state[it.authorId] = userState.copy(subject = Subject(config.subjects[index]))
             clientStore.channels[it.channelId].sendMessage("Please enter due date.")
           }
           userState.dueDate == null -> {
@@ -104,14 +97,14 @@ object HwBot : Command {
             clientStore.channels[it.channelId].sendMessage("Please enter tags numbers, separated by commas. Enter '-' for no tags.", embed {
               color = Colors.CYAN
               fields = mutableListOf(EmbedField("Tags", tags.mapIndexed { index, s ->
-                "$index | ${s.name}"
+                "`$index` | ${s.name}"
               }.joinToString("\n"), false))
             })
           }
           userState.tags == null -> {
             state[it.authorId] = userState.copy(tags = it.content.split(",")
                     .map { it.trim().toIntOrNull() }
-                    .filter { it in 0..2 }
+                    .filter { it in 0..tags.lastIndex }
                     .map { tags[it!!] })
             state[it.authorId] = state[it.authorId]!!.copy(
                     lastEditPerson = DiscordUser(it.author.username, it.authorId, read = true, write = true),
@@ -127,3 +120,6 @@ object HwBot : Command {
     }
   }
 }
+
+@Serializable
+data class PermanentMessage(val channel: String, val messageId: String)

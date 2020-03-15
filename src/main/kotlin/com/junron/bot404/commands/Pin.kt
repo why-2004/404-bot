@@ -12,7 +12,7 @@ object Pin {
         if (it.emoji.stringified == pin) {
           val guild = it.guildId ?: return@reactionAdded
           if (clientStore.guilds[guild].getMember(it.userId).roleIds
-                          .intersect(config.announcementRoles).isEmpty()
+                          .intersect(config.adminRoleIds).isEmpty()
           ) return@reactionAdded
           bot.clientStore.channels[it.channelId].pinMessage(it.messageId)
         }
@@ -22,7 +22,7 @@ object Pin {
         if (it.emoji.stringified == pin) {
           val guild = it.guildId ?: return@reactionRemoved
           if (clientStore.guilds[guild].getMember(it.userId).roleIds
-                          .intersect(config.announcementRoles).isEmpty()
+                          .intersect(config.adminRoleIds).isEmpty()
           ) return@reactionRemoved
           bot.clientStore.channels[it.channelId].unpinMessage(it.messageId)
         }

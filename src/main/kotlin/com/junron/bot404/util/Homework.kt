@@ -11,6 +11,7 @@ import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.joestelmach.natty.Parser
+import com.junron.bot404.commands.PermanentMessage
 import com.junron.bot404.config
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
@@ -25,18 +26,8 @@ import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
 private val hwFile = File(config.homeworkFile)
-val subscribersFile = File("data/subscribers.json")
-val permanentFile = File("data/permanent")
-val subjects = listOf(
-        "Math",
-        "English",
-        "Chinese",
-        "Higher chinese",
-        "CS",
-        "Physics",
-        "Chemistry",
-        "PE"
-).sorted()
+val permanentMessageStorage = Storage("permanentMessages", PermanentMessage.serializer())
+val subscribers = Storage("subscribers", Long.serializer())
 val tags = listOf(
         Tag("Graded", "red"),
         Tag("Project", "#ffcc00"),
@@ -121,7 +112,6 @@ fun init(bot: Bot) {
           8.64e+7.toLong()
   ) {
     val dayOfWeek = ZonedDateTime.now().dayOfWeek
-    val subscribers = Json.parse(Long.serializer().list, subscribersFile.readText().trim())
     if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && getHomework().tomorrow.isEmpty()) return@fixedRateTimer
     val embed = buildHomeworkEmbeds(getHomework().tomorrow).firstOrNull()
             ?: embed {
@@ -130,7 +120,7 @@ fun init(bot: Bot) {
             }
     subscribers.forEach {
       runBlocking {
-        Reminders.dmUser(bot, it.toString(), CreateMessage(content = "", embed = embed))
+        Reminders.dmUser(bot, it.item.toString(), CreateMessage(content = "", embed = embed))
       }
     }
   }
@@ -141,10 +131,6 @@ fun init(bot: Bot) {
           3.6e+6.toLong()
   ) {
     updatePermanent(bot)
-  }
-  if (!subscribersFile.exists()) {
-    subscribersFile.createNewFile()
-    subscribersFile.writeText("[]")
   }
 }
 
@@ -175,14 +161,14 @@ fun parseDate(date: String) = Parser().parse(date)
 
 @UnstableDefault
 fun updatePermanent(bot: Bot) {
-  if (!permanentFile.exists()) return
-  val (id, channelId) = permanentFile.readText().trim().split(",")
   val homework = getHomework()
-  runBlocking {
-    bot.clientStore.channels[channelId].editMessage(id, MessageEdit(
-            content = "",
-            embed = combineEmbeds(buildHomeworkEmbeds(homework))
-    ))
+  permanentMessageStorage.forEach {
+    runBlocking {
+      bot.clientStore.channels[it.item.channel].editMessage(it.item.messageId, MessageEdit(
+              content = "",
+              embed = combineEmbeds(buildHomeworkEmbeds(homework))
+      ))
+    }
   }
 }
 

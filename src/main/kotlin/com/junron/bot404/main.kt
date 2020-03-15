@@ -8,25 +8,30 @@ import com.junron.bot404.commands.Pin
 import kotlinx.serialization.UnstableDefault
 
 val helpText = """
-  Commands
+  **Commands**
   
-  `${config.botPrefix} ping`
+  **`${config.botPrefix} ping`**
   Check if server is alive
   
-  `${config.botPrefix} help`
+  **`${config.botPrefix} help`**
   Displays this message
 
-  `${config.hwbotPrefix} show`
+  **`${config.hwbotPrefix} show`**
   Displays all homework
   
-  `${config.hwbotPrefix} tomorrow`
+  **`${config.hwbotPrefix} tomorrow`**
   Displays homework due tomorrow
   
-  `${config.hwbotPrefix} permanent`
-  Displays homework with automatic updates. Can only be used once. 
-  Admin permission required to use
+  **`${config.hwbotPrefix} subscribe`**
+  Subscribe to daily homework reminders at 7pm.
+  Only valid in DMs.
+  There will be no reminders on Friday and Saturday
+  unless there is homework due on the following day.
+    
+  **`${config.hwbotPrefix} permanent`**
+  Displays homework with automatic updates.
   
-  `${config.hwbotPrefix} add`
+  **`${config.hwbotPrefix} add`**
   Add homework interactively
   Only valid in DMs
   Admin permission required
