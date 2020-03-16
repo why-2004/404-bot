@@ -40,32 +40,34 @@ fun getHomework() =
         Json.indented.parse(Homework.serializer().list, hwFile.readText())
                 .filter { it.dueDate.date.toDate().isFuture() }
 
-fun buildHomeworkEmbeds(homeworks: List<Homework>) =
-        homeworks.sortedBy { it.dueDate.date }
-                .groupBy { it.dueDate.date.substringBefore("T") }
-                .map {
-                  val date = it.key.toDateSimple()
-                  val dueDateDisplay = when {
-                    date.isTomorrow() -> "Due tomorrow"
-                    date.isToday() -> "Due today"
-                    date.isThisWeek() -> "Due ${date.dayOfWeek.toString().toLowerCase().capitalize()}"
-                    else -> "Due ${it.key}"
-                  }
-                  embed {
-                    title = dueDateDisplay
-                    color = Colors.GREEN
-                    fields = it.value.map { homework ->
-                      EmbedField(
-                              "**${homework.text}**",
-                              "${homework.subject.name}\n" +
-                                      if (homework.tags.isNotEmpty())
-                                        "(${homework.tags.joinToString(", ") { tag -> tag.name }})"
-                                      else "",
-                              inline = false
-                      )
-                    } as MutableList<EmbedField>
-                  }
-                }
+fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
+  var counter = 0
+  return homeworks.sortedBy { it.dueDate.date }
+          .groupBy { it.dueDate.date.substringBefore("T") }
+          .map {
+            val date = it.key.toDateSimple()
+            val dueDateDisplay = when {
+              date.isTomorrow() -> "Due tomorrow"
+              date.isToday() -> "Due today"
+              date.isThisWeek() -> "Due ${date.dayOfWeek.toString().toLowerCase().capitalize()}"
+              else -> "Due ${it.key}"
+            }
+            embed {
+              title = dueDateDisplay
+              color = Colors.GREEN
+              fields = it.value.map { homework ->
+                EmbedField(
+                        "**#${counter++} ${homework.text}**",
+                        "${homework.subject.name}\n" +
+                                if (homework.tags.isNotEmpty())
+                                  "(${homework.tags.joinToString(", ") { tag -> tag.name }})"
+                                else "",
+                        inline = false
+                )
+              } as MutableList<EmbedField>
+            }
+          }
+}
 
 fun combineEmbeds(embeds: List<Embed>) = embed {
   color = Colors.GREEN
@@ -140,6 +142,20 @@ fun addHomework(homework: Homework) {
   hwFile.writeText(
           Json.stringify(Homework.serializer().list, homeworkList + homework)
   )
+}
+
+@UnstableDefault
+fun deleteHomework(homeworkIndex: Int): Boolean {
+  val currentHomework = getHomework()
+  if (homeworkIndex !in 0..currentHomework.lastIndex) return false
+  val homeworkId = currentHomework[homeworkIndex].id
+  val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
+  hwFile.writeText(
+          Json.stringify(Homework.serializer().list, homeworkList
+                  .filter { it.id != homeworkId }
+          )
+  )
+  return true
 }
 
 fun parseDate(date: String) = Parser().parse(date)

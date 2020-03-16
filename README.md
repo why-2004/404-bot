@@ -28,3 +28,8 @@ Bot for M20404
   Add homework interactively.  
   Only valid in DMs.  
   Admin permission required.  
+  
+###  `!hwbot delete <id>`
+  Delete homework. Obtain id from `!hwbot show` or `!hwbot permanent`  
+  Only valid in DMs  
+  Admin permission required

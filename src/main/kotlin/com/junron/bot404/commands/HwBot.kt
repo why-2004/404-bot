@@ -11,6 +11,7 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.sendMessage
+import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
 import com.junron.bot404.util.*
 import kotlinx.serialization.Serializable
@@ -21,6 +22,7 @@ import java.util.*
 object HwBot : Command {
 
   private val state = mutableMapOf<String, HomeworkNullable>()
+
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
 
@@ -48,6 +50,16 @@ object HwBot : Command {
           if (guildId != null) return@command bot reject this
           subscribers += authorId.toLong()
           bot accept this
+        }
+        command("delete") {
+          if (clientStore.guilds[config.guild].getMember(authorId).roleIds
+                          .intersect(config.adminRoleIds).isEmpty() || guildId != null
+          ) return@command bot reject this
+          val index = words.getOrNull(2)?.toIntOrNull()
+                  ?: return@command bot reject this
+          if (!deleteHomework(index)) return@command bot reject this
+          bot accept this
+          updatePermanent(bot)
         }
 
         command("add") {

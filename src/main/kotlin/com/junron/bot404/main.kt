@@ -35,6 +35,11 @@ val helpText = """
   Add homework interactively
   Only valid in DMs
   Admin permission required
+  
+  **`${config.hwbotPrefix} delete <id>`**
+  Delete homework. Obtain id from `${config.hwbotPrefix} show` or `${config.hwbotPrefix} permanent`
+  Only valid in DMs
+  Admin permission required
 """.trimIndent()
 
 @UnstableDefault
