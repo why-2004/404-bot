@@ -13,6 +13,7 @@ data class Homework(
         val lastEditTime: Date
 )
 
+@Serializable
 data class HomeworkNullable(
         val id: String = "",
         val subject: Subject? = null,

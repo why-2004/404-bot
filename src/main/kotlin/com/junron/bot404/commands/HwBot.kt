@@ -3,14 +3,12 @@ package com.junron.bot404.commands
 import com.hwboard.DiscordUser
 import com.hwboard.HomeworkNullable
 import com.hwboard.Subject
-import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
-import com.jessecorbett.diskord.util.sendMessage
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
 import com.junron.bot404.util.*
@@ -20,8 +18,6 @@ import java.util.*
 
 
 object HwBot : Command {
-
-  private val state = mutableMapOf<String, HomeworkNullable>()
 
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
@@ -57,75 +53,59 @@ object HwBot : Command {
           ) return@command bot reject this
           val index = words.getOrNull(2)?.toIntOrNull()
                   ?: return@command bot reject this
-          if (!deleteHomework(index)) return@command bot reject this
-          bot accept this
-          updatePermanent(bot)
+          val homework = getHomework().getOrNull(index)
+                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          if (words.getOrNull(3) == "--force") {
+            deleteHomework(index)
+            updatePermanent(bot)
+            return@command bot accept this
+          }
+          with(Conversation(HomeworkNullable())) {
+            init(bot, channelId, listOf(TextQuestion(
+                    "Are you sure you want to delete '${homework.text}'? Type 'y' to confirm.") {
+              if (it.toLowerCase().trim() == "y") {
+                if (!deleteHomework(index)) bot reject this@command
+                next()
+                updatePermanent(bot)
+                return@TextQuestion
+              }
+              bot.reject(this@command, "Cancelled")
+              cancel()
+            }, Done("Homework deleted") {}))
+          }
         }
 
         command("add") {
           if (clientStore.guilds[config.guild].getMember(authorId).roleIds
                           .intersect(config.adminRoleIds).isEmpty() || guildId != null
           ) return@command bot reject this
-          val processState = state[authorId]
-          if (processState == null) {
-            state[authorId] = HomeworkNullable(id = UUID.randomUUID().toString())
-            reply("Please enter subject number: ", embed {
-              color = Colors.CYAN
-              fields = mutableListOf(EmbedField("Subjects", config.subjects.mapIndexed { index, s ->
-                "`$index` | $s"
-              }.joinToString("\n"), false))
-            })
-          } else {
-            return@command bot reject this
-          }
-        }
-      }
-      messageCreated { it ->
-        val userState = state[it.authorId] ?: return@messageCreated
-        when {
-          userState.subject == null -> {
-            val index = it.content.toIntOrNull()
-                    ?: return@messageCreated run {
-                      clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${config.subjects.lastIndex}")
-                    }
-            if (index !in 0..(config.subjects.lastIndex))
-              return@messageCreated run {
-                clientStore.channels[it.channelId].sendMessage("Please enter a number between 0 and ${config.subjects.lastIndex}")
-              }
-            state[it.authorId] = userState.copy(subject = Subject(config.subjects[index]))
-            clientStore.channels[it.channelId].sendMessage("Please enter due date.")
-          }
-          userState.dueDate == null -> {
-            val date = parseDate(it.content)
-                    ?: return@messageCreated run {
-                      clientStore.channels[it.channelId].sendMessage("Please enter a valid due date.")
-                    }
-            state[it.authorId] = userState.copy(dueDate = date.toDate())
-            clientStore.channels[it.channelId].sendMessage("Please enter homework text.")
-          }
-          userState.text.isEmpty() -> {
-            val text = it.content
-            state[it.authorId] = userState.copy(text = text)
-            clientStore.channels[it.channelId].sendMessage("Please enter tags numbers, separated by commas. Enter '-' for no tags.", embed {
-              color = Colors.CYAN
-              fields = mutableListOf(EmbedField("Tags", tags.mapIndexed { index, s ->
-                "`$index` | ${s.name}"
-              }.joinToString("\n"), false))
-            })
-          }
-          userState.tags == null -> {
-            state[it.authorId] = userState.copy(tags = it.content.split(",")
-                    .map { it.trim().toIntOrNull() }
-                    .filter { it in 0..tags.lastIndex }
-                    .map { tags[it!!] })
-            state[it.authorId] = state[it.authorId]!!.copy(
-                    lastEditPerson = DiscordUser(it.author.username, it.authorId, read = true, write = true),
-                    lastEditTime = Date().toDate()
-            )
-            addHomework(state[it.authorId]!!.toHomework())
-            updatePermanent(bot)
-            state.remove(it.authorId)
-            clientStore.channels[it.channelId].sendMessage("Homework added successfully")
+          with(Conversation(HomeworkNullable())) {
+            init(bot, channelId, listOf(
+                    ChoiceQuestion("Select subject: ", config.subjects) {
+                      state = state.copy(subject = Subject(it))
+                      next()
+                    },
+                    DateQuestion("Enter due date: ", true) {
+                      state = state.copy(dueDate = it.toDate())
+                      next()
+                    },
+                    TextQuestion("Enter homework text: ") {
+                      state = state.copy(text = it)
+                      next()
+                    },
+                    MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags.map { it.name }) {
+                      state = state.copy(tags = it.map { tagName ->
+                        tags.find { tag -> tag.name == tagName }!!
+                      })
+                      next()
+                    },
+                    Done("Homework added successfully") {
+                      state = state.copy(
+                              lastEditPerson = DiscordUser(author.username, authorId, read = true, write = true),
+                              lastEditTime = Date().toDate())
+                      addHomework(state.toHomework())
+                      updatePermanent(bot)
+                    }))
           }
         }
       }

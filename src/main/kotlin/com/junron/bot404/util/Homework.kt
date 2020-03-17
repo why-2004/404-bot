@@ -81,26 +81,6 @@ fun combineEmbeds(embeds: List<Embed>) = embed {
   }.flatten() as MutableList<EmbedField>
 }
 
-fun String.toDateSimple(): Date = SimpleDateFormat("yyyy-MM-dd").parse(this)
-fun String.toDate(): Date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").parse(this)
-fun Date.toDate() = com.hwboard.Date(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this))
-fun Date.isFuture() = this.after(Date.from(Instant.now()))
-fun Date.toLocalDate(): LocalDate = this.toInstant()
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
-
-fun Date.isTomorrow() = this.toLocalDate()
-        .isEqual(LocalDate.now().plusDays(1))
-
-fun Date.isToday() = this.toLocalDate()
-        .isEqual(LocalDate.now())
-
-fun Date.isThisWeek() = this.toLocalDate()
-        .isBefore(LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY)))
-
-val Date.dayOfWeek: DayOfWeek
-  get() = this.toLocalDate().dayOfWeek
-
 
 @UnstableDefault
 fun init(bot: Bot) {
@@ -158,22 +138,19 @@ fun deleteHomework(homeworkIndex: Int): Boolean {
   return true
 }
 
-fun parseDate(date: String) = Parser().parse(date)
-        ?.firstOrNull()
-        ?.dates
-        ?.firstOrNull()
-        ?.let {
-          if (it.isFuture()) it else null
-        }
-        ?.run {
-          val cal = GregorianCalendar()
-          cal.time = this
-          cal[Calendar.HOUR_OF_DAY] = 22
-          cal[Calendar.MINUTE] = 59
-          cal[Calendar.SECOND] = 59
-          cal[Calendar.MILLISECOND] = 999
-          cal.time
-        }
+//
+//        ?.let {
+//          if (it.isFuture()) it else null
+//        }
+//        ?.run {
+//          val cal = GregorianCalendar()
+//          cal.time = this
+//          cal[Calendar.HOUR_OF_DAY] = 22
+//          cal[Calendar.MINUTE] = 59
+//          cal[Calendar.SECOND] = 59
+//          cal[Calendar.MILLISECOND] = 999
+//          cal.time
+//        }
 
 @UnstableDefault
 fun updatePermanent(bot: Bot) {

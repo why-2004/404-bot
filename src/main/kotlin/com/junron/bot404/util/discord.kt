@@ -2,6 +2,7 @@ package com.junron.bot404.util
 
 import com.jessecorbett.diskord.api.model.Message
 import com.jessecorbett.diskord.dsl.Bot
+import com.jessecorbett.diskord.util.sendMessage
 
 object EmojiMappings {
   const val ok = "\uD83D\uDC4C"
@@ -15,3 +16,8 @@ suspend infix fun Bot.reject(message: Message) =
 
 suspend infix fun Bot.accept(message: Message) =
         clientStore.channels[message.channelId].addMessageReaction(message.id, EmojiMappings.ok)
+
+suspend fun Bot.reject(message: Message, reason: String) = run {
+  clientStore.channels[message.channelId].sendMessage(reason)
+  Unit
+}
