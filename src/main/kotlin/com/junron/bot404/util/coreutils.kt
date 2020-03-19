@@ -19,7 +19,7 @@ fun parseDate(date: String) = Parser().parse(date)
 
 fun String.toDateSimple(): Date = SimpleDateFormat("yyyy-MM-dd").parse(this)
 fun String.toDate(): Date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").parse(this)
-fun Date.toDate() = com.hwboard.Date(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this))
+fun Date.toDateString(): String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this)
 fun Date.isFuture() = this.after(Date.from(Instant.now()))
 fun Date.toLocalDate(): LocalDate = this.toInstant()
         .atZone(ZoneId.systemDefault())

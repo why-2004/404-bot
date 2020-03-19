@@ -1,8 +1,5 @@
 package com.junron.bot404.commands
 
-import com.hwboard.DiscordUser
-import com.hwboard.HomeworkNullable
-import com.hwboard.Subject
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
 import com.jessecorbett.diskord.dsl.command
@@ -11,6 +8,7 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
+import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.util.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
@@ -53,7 +51,7 @@ object HwBot : Command {
           ) return@command bot reject this
           val index = words.getOrNull(2)?.toIntOrNull()
                   ?: return@command bot reject this
-          val homework = getHomework().getOrNull(index)
+          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
                   ?: return@command bot.reject(this, "$index is not a valid homework index.")
           if (words.getOrNull(3) == "--force") {
             deleteHomework(index)
@@ -82,27 +80,25 @@ object HwBot : Command {
           with(Conversation(HomeworkNullable())) {
             init(bot, channelId, listOf(
                     ChoiceQuestion("Select subject: ", config.subjects) {
-                      state = state.copy(subject = Subject(it))
+                      state = state.copy(subject = it)
                       next()
                     },
                     DateQuestion("Enter due date: ", true) {
-                      state = state.copy(dueDate = it.toDate())
+                      state = state.copy(dueDate = it)
                       next()
                     },
                     TextQuestion("Enter homework text: ") {
                       state = state.copy(text = it)
                       next()
                     },
-                    MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags.map { it.name }) {
-                      state = state.copy(tags = it.map { tagName ->
-                        tags.find { tag -> tag.name == tagName }!!
-                      })
+                    MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags) {
+                      state = state.copy(tags = it)
                       next()
                     },
                     Done("Homework added successfully") {
                       state = state.copy(
-                              lastEditPerson = DiscordUser(author.username, authorId, read = true, write = true),
-                              lastEditTime = Date().toDate())
+                              lastEditPerson = author.username,
+                              lastEditTime = Date())
                       addHomework(state.toHomework())
                       updatePermanent(bot)
                     }))

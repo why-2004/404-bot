@@ -1,8 +1,6 @@
 package com.junron.bot404.util
 
 import com.github.shyiko.skedule.Schedule
-import com.hwboard.Homework
-import com.hwboard.Tag
 import com.jessecorbett.diskord.api.rest.CreateMessage
 import com.jessecorbett.diskord.api.rest.Embed
 import com.jessecorbett.diskord.api.rest.EmbedField
@@ -10,40 +8,39 @@ import com.jessecorbett.diskord.api.rest.MessageEdit
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
-import com.joestelmach.natty.Parser
 import com.junron.bot404.commands.PermanentMessage
-import com.junron.bot404.config
+import com.junron.bot404.model.Homework
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import java.io.File
-import java.text.SimpleDateFormat
-import java.time.*
-import java.time.temporal.TemporalAdjusters
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.ZonedDateTime
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
-private val hwFile = File(config.homeworkFile)
+private val hwFile = File("./homework.json")
 val permanentMessageStorage = Storage("permanentMessages", PermanentMessage.serializer())
 val subscribers = Storage("subscribers", Long.serializer())
 val tags = listOf(
-        Tag("Graded", "red"),
-        Tag("Project", "#ffcc00"),
-        Tag("Optional", "#4cd964"),
-        Tag("Assessment", "#f18e33")
+        "Graded",
+        "Project",
+        "Optional",
+        "Assessment"
 )
 
 @UnstableDefault
 fun getHomework() =
         Json.indented.parse(Homework.serializer().list, hwFile.readText())
-                .filter { it.dueDate.date.toDate().isFuture() }
+                .filter { it.dueDate.toDate().isFuture() }
 
 fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
   var counter = 0
-  return homeworks.sortedBy { it.dueDate.date }
-          .groupBy { it.dueDate.date.substringBefore("T") }
+  return homeworks.sortedBy { it.dueDate }
+          .groupBy { it.dueDate.substringBefore("T") }
           .map {
             val date = it.key.toDateSimple()
             val dueDateDisplay = when {
@@ -58,9 +55,9 @@ fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
               fields = it.value.map { homework ->
                 EmbedField(
                         "**#${counter++} ${homework.text}**",
-                        "${homework.subject.name}\n" +
+                        "${homework.subject}\n" +
                                 if (homework.tags.isNotEmpty())
-                                  "(${homework.tags.joinToString(", ") { tag -> tag.name }})"
+                                  "(${homework.tags.joinToString(", ")})"
                                 else "",
                         inline = false
                 )
@@ -120,37 +117,23 @@ fun init(bot: Bot) {
 fun addHomework(homework: Homework) {
   val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
-          Json.stringify(Homework.serializer().list, homeworkList + homework)
+          Json.indented.stringify(Homework.serializer().list, homeworkList + homework)
   )
 }
 
 @UnstableDefault
 fun deleteHomework(homeworkIndex: Int): Boolean {
-  val currentHomework = getHomework()
+  val currentHomework = getHomework().sortedBy { it.dueDate }
   if (homeworkIndex !in 0..currentHomework.lastIndex) return false
   val homeworkId = currentHomework[homeworkIndex].id
   val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
-          Json.stringify(Homework.serializer().list, homeworkList
+          Json.indented.stringify(Homework.serializer().list, homeworkList
                   .filter { it.id != homeworkId }
           )
   )
   return true
 }
-
-//
-//        ?.let {
-//          if (it.isFuture()) it else null
-//        }
-//        ?.run {
-//          val cal = GregorianCalendar()
-//          cal.time = this
-//          cal[Calendar.HOUR_OF_DAY] = 22
-//          cal[Calendar.MINUTE] = 59
-//          cal[Calendar.SECOND] = 59
-//          cal[Calendar.MILLISECOND] = 999
-//          cal.time
-//        }
 
 @UnstableDefault
 fun updatePermanent(bot: Bot) {
@@ -166,4 +149,4 @@ fun updatePermanent(bot: Bot) {
 }
 
 val List<Homework>.tomorrow: List<Homework>
-  get() = filter { it.dueDate.date.toDate().isTomorrow() }
+  get() = filter { it.dueDate.toDate().isTomorrow() }

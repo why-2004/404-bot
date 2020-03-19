@@ -54,7 +54,7 @@ suspend fun main() {
       }
     }
 
-    commands("${config.hwbotPrefix} "){
+    commands("${config.hwbotPrefix} ") {
       HwBot.init(this@bot, this)
     }
 
