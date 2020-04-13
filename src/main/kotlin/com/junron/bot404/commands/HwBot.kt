@@ -77,7 +77,7 @@ object HwBot : Command {
           if (clientStore.guilds[config.guild].getMember(authorId).roleIds
                           .intersect(config.adminRoleIds).isEmpty() || guildId != null
           ) return@command bot reject this
-          with(Conversation(HomeworkNullable())) {
+          with(Conversation(HomeworkNullable(id = uuid()))) {
             init(bot, channelId, listOf(
                     ChoiceQuestion("Select subject: ", config.subjects) {
                       state = state.copy(subject = it)
