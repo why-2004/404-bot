@@ -1,9 +1,6 @@
 package com.junron.bot404.commands
 
-import com.jessecorbett.diskord.dsl.Bot
-import com.jessecorbett.diskord.dsl.CommandSet
-import com.jessecorbett.diskord.dsl.command
-import com.jessecorbett.diskord.dsl.embed
+import com.jessecorbett.diskord.dsl.*
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
@@ -71,6 +68,22 @@ object HwBot : Command {
               cancel()
             }, Done("Homework deleted") {}))
           }
+        }
+
+        command("info") {
+          val index = words.getOrNull(2)?.toIntOrNull()
+                  ?: return@command bot reject this
+          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
+                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          reply("", embed = embed {
+            title = homework.text
+            field("Subject", homework.subject, false)
+            field("Due", homework.dueDate.toDate().toShortString(), false)
+            field("Tags", if (homework.tags.isEmpty()) "None" else homework.tags.joinToString(", "), false)
+            field("Last edited by", homework.lastEditPerson, false)
+            field("Last updated", homework.lastEditTime.toDate().toDetailedString(), false)
+            color = Colors.GREEN
+          })
         }
 
         command("add") {

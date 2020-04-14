@@ -20,7 +20,7 @@ import kotlin.concurrent.fixedRateTimer
 
 
 object Temperature : Command {
-  val subscribers = Storage("temp_subscribers", Long.serializer())
+  private val subscribers = Storage("temp_subscribers", Long.serializer())
 
   override fun init(bot: Bot, prefix: CommandSet) {
     with(prefix) {

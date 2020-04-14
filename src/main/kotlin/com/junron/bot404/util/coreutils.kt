@@ -18,6 +18,27 @@ fun parseDate(date: String) = Parser().parse(date)
         ?.firstOrNull()
 
 fun String.toDateSimple(): Date = SimpleDateFormat("yyyy-MM-dd").parse(this)
+fun Date.toShortString(): String {
+  val day = SimpleDateFormat("dd MMM").format(this)
+  return when {
+    isTomorrow() -> "Tomorrow"
+    isToday() -> "Today"
+    isThisWeek() -> dayOfWeek.toString().toLowerCase().capitalize()
+    else -> day
+  }
+}
+
+fun Date.toDetailedString(): String {
+  val sdf = SimpleDateFormat("dd MMM")
+  val sdf2 = SimpleDateFormat("hh:mm a")
+  val day: String = when {
+    isToday() -> "Today (${sdf.format(this)})"
+    isTomorrow() -> "Tomorrow (${sdf.format(this)})"
+    else -> sdf.format(this)
+  }
+  return "$day at ${sdf2.format(this)}"
+}
+
 fun String.toDate(): Date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").parse(this)
 fun Date.toDateString(): String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(this)
 fun Date.isFuture() = this.after(Date.from(Instant.now()))

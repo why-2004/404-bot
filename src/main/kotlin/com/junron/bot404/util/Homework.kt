@@ -43,12 +43,7 @@ fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
           .groupBy { it.dueDate.substringBefore("T") }
           .map {
             val date = it.key.toDateSimple()
-            val dueDateDisplay = when {
-              date.isTomorrow() -> "Due tomorrow"
-              date.isToday() -> "Due today"
-              date.isThisWeek() -> "Due ${date.dayOfWeek.toString().toLowerCase().capitalize()}"
-              else -> "Due ${it.key}"
-            }
+            val dueDateDisplay = "Due " + date.toShortString()
             embed {
               title = dueDateDisplay
               color = Colors.GREEN
