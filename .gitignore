@@ -34,3 +34,4 @@ secrets/*
 /config.json
 /data/
 /src/main/kotlin/com/junron/bot404/Analyze.kt
+/homework.json

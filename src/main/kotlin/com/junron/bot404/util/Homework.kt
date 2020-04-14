@@ -12,9 +12,10 @@ import com.junron.bot404.commands.PermanentMessage
 import com.junron.bot404.model.Homework
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
+import kotlinx.serialization.builtins.list
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
-import kotlinx.serialization.serializer
 import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalTime
