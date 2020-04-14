@@ -15,7 +15,6 @@ import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.builtins.list
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.list
 import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalTime

@@ -5,6 +5,7 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
+import com.junron.bot404.commands.Temperature
 import kotlinx.serialization.UnstableDefault
 
 val helpText = """
@@ -52,6 +53,7 @@ suspend fun main() {
       command("ping") {
         reply("pong")
       }
+      Temperature.init(this@bot, this)
     }
 
     commands("${config.hwbotPrefix} ") {
