@@ -38,7 +38,7 @@ object Temperature : Command {
     fixedRateTimer(
             UUID.randomUUID().toString(),
             false,
-            (Schedule.at(LocalTime.of(8, 30))
+            (Schedule.at(LocalTime.of(6, 0))
                     .everyDay()
                     .next(ZonedDateTime.now())
                     .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
