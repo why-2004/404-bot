@@ -34,7 +34,7 @@ val tags = listOf(
 
 @UnstableDefault
 fun getHomework() =
-        Json.indented.parse(Homework.serializer().list, hwFile.readText())
+        indentedJson.parse(Homework.serializer().list, hwFile.readText())
                 .filter { it.dueDate.toDate().isFuture() }
 
 fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
@@ -112,7 +112,16 @@ fun init(bot: Bot) {
 fun addHomework(homework: Homework) {
   val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
-          Json.indented.stringify(Homework.serializer().list, homeworkList + homework)
+          indentedJson.stringify(Homework.serializer().list, homeworkList + homework)
+  )
+}
+
+@UnstableDefault
+fun editHomework(homework: Homework) {
+  val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
+          .filter { it.id != homework.id } + homework
+  hwFile.writeText(
+          indentedJson.stringify(Homework.serializer().list, homeworkList)
   )
 }
 
@@ -123,7 +132,7 @@ fun deleteHomework(homeworkIndex: Int): Boolean {
   val homeworkId = currentHomework[homeworkIndex].id
   val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
-          Json.indented.stringify(Homework.serializer().list, homeworkList
+          indentedJson.stringify(Homework.serializer().list, homeworkList
                   .filter { it.id != homeworkId }
           )
   )

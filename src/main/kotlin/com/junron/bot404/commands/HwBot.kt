@@ -5,6 +5,7 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
+import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.util.*
 import kotlinx.serialization.Serializable
@@ -14,6 +15,7 @@ import java.util.*
 
 object HwBot : Command {
 
+  @ExperimentalStdlibApi
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
 
@@ -86,6 +88,52 @@ object HwBot : Command {
           })
         }
 
+        command("edit") {
+          if (clientStore.guilds[config.guild].getMember(authorId).roleIds
+                          .intersect(config.adminRoleIds).isEmpty() || guildId != null
+          ) return@command bot reject this
+          val index = words.getOrNull(2)?.toIntOrNull()
+                  ?: return@command bot reject this
+          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
+                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          val fields = listOf("Subject", "Text", "Due date", "Tags")
+          lateinit var selectedFields: List<String>
+          with(Conversation(null)) {
+            init(bot, channelId, listOf(MultipleChoiceQuestion("Select fields you want to edit, separated by commas.", fields) {
+              selectedFields = it
+              next()
+            }, Done("Editing ${homework.text}") {
+              with(Conversation(homework)) {
+                init(bot, channelId, buildList<Question<*>> {
+                  if ("Subject" in selectedFields) add(ChoiceQuestion("Select subject: ", config.subjects) {
+                    state = state.copy(subject = it)
+                    next()
+                  })
+                  if ("Text" in selectedFields) add(TextQuestion("Enter text: ") {
+                    state = state.copy(text = it)
+                    next()
+                  })
+                  if ("Due date" in selectedFields) add(DateQuestion("Enter due date: ", true) {
+                    state = state.copy(dueDate = it.toDateString())
+                    next()
+                  })
+                  if ("Tags" in selectedFields) add(MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags) {
+                    state = state.copy(tags = it)
+                    next()
+                  })
+                  add(Done("Homework edited successfully") {
+                    state = state.copy(
+                            lastEditPerson = author.username,
+                            lastEditTime = Date().toDateString())
+                    editHomework(state)
+                    updatePermanent(bot)
+                  })
+                })
+              }
+            })
+            )
+          }
+        }
         command("add") {
           if (clientStore.guilds[config.guild].getMember(authorId).roleIds
                           .intersect(config.adminRoleIds).isEmpty() || guildId != null

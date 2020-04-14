@@ -1,6 +1,9 @@
 package com.junron.bot404.util
 
 import com.joestelmach.natty.Parser
+import kotlinx.serialization.UnstableDefault
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import java.text.SimpleDateFormat
 import java.time.DayOfWeek
 import java.time.Instant
@@ -57,3 +60,6 @@ fun Date.isThisWeek() = this.toLocalDate()
 
 val Date.dayOfWeek: DayOfWeek
   get() = this.toLocalDate().dayOfWeek
+
+@UnstableDefault
+val indentedJson = Json(JsonConfiguration(prettyPrint = true))

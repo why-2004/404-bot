@@ -33,3 +33,11 @@ Bot for M20404
   Delete homework. Obtain id from `!hwbot show` or `!hwbot permanent`  
   Only valid in DMs  
   Admin permission required
+  
+###  `!hwbot edit <id>`
+  Interactively edit homework. Obtain id from `!hwbot show` or `!hwbot permanent`  
+  Only valid in DMs  
+  Admin permission required
+  
+###  `!hwbot info <id>`
+  Prints more detailed info about this homework
