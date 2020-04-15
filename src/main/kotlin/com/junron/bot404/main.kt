@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.dsl.commands
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
 import com.junron.bot404.commands.Temperature
+import com.junron.bot404.util.Timetable
 import kotlinx.serialization.UnstableDefault
 
 val helpText = """
@@ -67,6 +68,7 @@ suspend fun main() {
 
     commands("${config.hwbotPrefix} ") {
       HwBot.init(this@bot, this)
+      Timetable.init()
     }
 
     Pin.init(this)

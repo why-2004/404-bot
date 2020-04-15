@@ -7,6 +7,8 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.isFromUser
 import com.jessecorbett.diskord.util.sendMessage
+import com.junron.bot404.model.Homework
+import com.junron.bot404.model.HomeworkNullable
 import kotlinx.serialization.Serializable
 import java.util.*
 
@@ -30,7 +32,7 @@ class Conversation<T>(
         bot.clientStore.channels[channelId].sendMessage("Cancelled")
         cancel()
       }
-      questions[questionNumber].handleMessage(it)
+      questions[questionNumber].handleMessage(it, state)
     }
     next()
   }
@@ -62,11 +64,11 @@ abstract class Question<T> {
   }
 
   abstract suspend fun sendMessage()
-  abstract suspend fun handleMessage(message: Message)
+  abstract suspend fun handleMessage(message: Message, state: Any?)
 }
 
 class TextQuestion(override val message: String, override val callback: suspend (String) -> Unit) : Question<String>() {
-  override suspend fun handleMessage(message: Message) {
+  override suspend fun handleMessage(message: Message, state: Any?) {
     if (message.content.isBlank()) run {
       bot.clientStore.channels[channelId].sendMessage("Text cannot be blank")
       return@handleMessage
@@ -81,7 +83,29 @@ class TextQuestion(override val message: String, override val callback: suspend 
 }
 
 class DateQuestion(override val message: String, private val future: Boolean, override val callback: suspend (Date) -> Unit) : Question<Date>() {
-  override suspend fun handleMessage(message: Message) {
+  override suspend fun handleMessage(message: Message, state: Any?) {
+    if (message.content.trim().toLowerCase() == "next lesson") {
+      val subject = when {
+        state as? Homework != null -> {
+          state.subject
+        }
+        state as? HomeworkNullable != null -> {
+          state.subject ?: run {
+            bot.clientStore.channels[channelId].sendMessage("That doesn't seem like a valid date.")
+            return@handleMessage
+          }
+        }
+        else -> run {
+          bot.clientStore.channels[channelId].sendMessage("That doesn't seem like a valid date.")
+          return@handleMessage
+        }
+      }
+      callback(Timetable.getNextLesson(subject) ?: run {
+        bot.clientStore.channels[channelId].sendMessage("That doesn't seem like a valid date.")
+        return@handleMessage
+      })
+      return
+    }
     val date = parseDate(message.content) ?: run {
       bot.clientStore.channels[channelId].sendMessage("That doesn't seem like a valid date.")
       return@handleMessage
@@ -105,7 +129,7 @@ class DateQuestion(override val message: String, private val future: Boolean, ov
 
 @Serializable
 class ChoiceQuestion(override val message: String, private val options: List<String>, override val callback: suspend (String) -> Unit) : Question<String>() {
-  override suspend fun handleMessage(message: Message) {
+  override suspend fun handleMessage(message: Message, state: Any?) {
     callback(message.content.trim().toIntOrNull()?.let { index ->
       options.getOrNull(index)
     } ?: run {
@@ -126,7 +150,7 @@ class ChoiceQuestion(override val message: String, private val options: List<Str
 }
 
 class MultipleChoiceQuestion(override val message: String, private val options: List<String>, override val callback: suspend (List<String>) -> Unit) : Question<List<String>>() {
-  override suspend fun handleMessage(message: Message) {
+  override suspend fun handleMessage(message: Message, state: Any?) {
     if (message.content.trim() == "-") return callback(emptyList())
     val selected = message.content.split(",")
     callback(selected
@@ -157,6 +181,6 @@ class Done(override val message: String, override val callback: suspend (Unit) -
     bot.clientStore.channels[channelId].sendMessage(message)
   }
 
-  override suspend fun handleMessage(message: Message) {
+  override suspend fun handleMessage(message: Message, state: Any?) {
   }
 }

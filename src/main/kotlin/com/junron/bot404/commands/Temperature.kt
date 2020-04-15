@@ -38,7 +38,7 @@ object Temperature : Command {
     fixedRateTimer(
             UUID.randomUUID().toString(),
             false,
-            (Schedule.at(LocalTime.of(6, 0))
+            (Schedule.at(LocalTime.of(7, 0))
                     .everyDay()
                     .next(ZonedDateTime.now())
                     .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
@@ -46,7 +46,22 @@ object Temperature : Command {
     ) {
       subscribers.forEach {
         runBlocking {
-          Reminders.dmUser(bot, it.item.toString(), CreateMessage(content = "Please take your temperature now. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
+          Reminders.dmUser(bot, it.item.toString(), CreateMessage(content = "Please take your temperature. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
+        }
+      }
+    }
+    fixedRateTimer(
+            UUID.randomUUID().toString(),
+            false,
+            (Schedule.at(LocalTime.of(8, 45))
+                    .everyDay()
+                    .next(ZonedDateTime.now())
+                    .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
+            8.64e+7.toLong()
+    ) {
+      subscribers.forEach {
+        runBlocking {
+          Reminders.dmUser(bot, it.item.toString(), CreateMessage(content = "Please take your temperature now. You have 15 minutes. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
         }
       }
     }
