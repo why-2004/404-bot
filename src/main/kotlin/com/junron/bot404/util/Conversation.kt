@@ -7,6 +7,7 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.isFromUser
 import com.jessecorbett.diskord.util.sendMessage
+import com.junron.bot404.commands.Time
 import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import kotlinx.serialization.Serializable
@@ -20,19 +21,19 @@ class Conversation<T>(
   private lateinit var bot: Bot
   private var questionNumber = -1
   private var active = true
-  private var questions: List<Question<*>> = emptyList()
+  private var questions: MutableList<Question<*>> = mutableListOf()
 
   suspend fun init(bot: Bot, channelId: String, questions: List<Question<*>>) {
     this.bot = bot
     this.channelId = channelId
-    this.questions = questions
+    this.questions = questions.toMutableList()
     bot.messageCreated {
       if (!it.isFromUser || it.channelId != channelId || !active) return@messageCreated
       if (it.content.trim() == "!cancel") return@messageCreated run {
         bot.clientStore.channels[channelId].sendMessage("Cancelled")
         cancel()
       }
-      questions[questionNumber].handleMessage(it, state)
+      this.questions[questionNumber].handleMessage(it, state)
     }
     next()
   }
@@ -42,10 +43,18 @@ class Conversation<T>(
     val question = questions[questionNumber]
     question.init(bot, channelId)
     question.sendMessage()
-    if (questionNumber == questions.lastIndex) {
-      (question as? Done)?.callback?.invoke(Unit)
+    if (questionNumber == questions.lastIndex && question is Done) {
+      question.callback(Unit)
       active = false
     }
+  }
+
+  fun addQuestion(question: Question<*>) {
+    val doneIndex = with(questions.indexOfLast { it is Done }) {
+      if (this == -1) questions.size
+      else this
+    }
+    questions.add(maxOf(0, doneIndex), question)
   }
 
   fun cancel() {
@@ -127,6 +136,41 @@ class DateQuestion(override val message: String, private val future: Boolean, ov
   }
 }
 
+class TimeQuestion(override val message: String, override val callback: suspend (Time) -> Unit) : Question<Time>() {
+  override suspend fun handleMessage(message: Message, state: Any?) {
+    val parts = message.content.split(":").mapNotNull {
+      it.trim().toIntOrNull()
+    }
+    if (parts.size != 2 || parts[0] !in 0..23 || parts[1] !in 0..59) run {
+      bot.clientStore.channels[channelId].sendMessage("Please enter time in 24 hour hh:mm format.")
+      return@handleMessage
+    }
+    callback(Time(parts[0], parts[1]))
+  }
+
+  override suspend fun sendMessage() {
+    bot.clientStore.channels[channelId].sendMessage(message)
+  }
+
+}
+
+class BooleanQuestion(
+        override val message: String,
+        private val default: Boolean = false,
+        override val callback: suspend (Boolean) -> Unit
+) : Question<Boolean>() {
+  override suspend fun handleMessage(message: Message, state: Any?) {
+    val content = message.content.toLowerCase()
+    if (content == "y" || (default && content != "n")) return callback(true)
+    callback(false)
+  }
+
+  override suspend fun sendMessage() {
+    bot.clientStore.channels[channelId].sendMessage(message + if (default) "[Y/n]" else "[N/y]")
+  }
+
+}
+
 @Serializable
 class ChoiceQuestion(override val message: String, private val options: List<String>, override val callback: suspend (String) -> Unit) : Question<String>() {
   override suspend fun handleMessage(message: Message, state: Any?) {
@@ -162,6 +206,7 @@ class MultipleChoiceQuestion(override val message: String, private val options: 
               }
               it!!
             }
+            .distinct()
             .map { options[it] })
 
   }

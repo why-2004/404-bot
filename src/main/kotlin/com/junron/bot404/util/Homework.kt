@@ -7,6 +7,7 @@ import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.api.rest.MessageEdit
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.embed
+import com.jessecorbett.diskord.dsl.field
 import com.jessecorbett.diskord.util.Colors
 import com.junron.bot404.commands.PermanentMessage
 import com.junron.bot404.model.Homework
@@ -73,6 +74,15 @@ fun combineEmbeds(embeds: List<Embed>) = embed {
   }.flatten() as MutableList<EmbedField>
 }
 
+fun Homework.generateEmbed() = embed {
+  title = text
+  field("Subject", subject, false)
+  field("Due", dueDate.toDate().toShortString(), false)
+  field("Tags", if (tags.isEmpty()) "None" else tags.joinToString(", "), false)
+  field("Last edited by", lastEditPerson, false)
+  field("Last updated", lastEditTime.toDate().toDetailedString(), false)
+  color = Colors.GREEN
+}
 
 @UnstableDefault
 fun init(bot: Bot) {

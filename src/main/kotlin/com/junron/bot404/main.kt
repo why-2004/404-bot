@@ -63,6 +63,9 @@ suspend fun main() {
       command("ping") {
         reply("pong")
       }
+    }
+
+    commands("!temperature "){
       Temperature.init(this@bot, this)
     }
 

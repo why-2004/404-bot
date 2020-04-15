@@ -15,7 +15,7 @@ class Storage<T>(
         name: String,
         private val serializer: KSerializer<T>,
         private val items: MutableList<ItemWrapper<T>> = mutableListOf()
-) : List<ItemWrapper<T>> by items {
+) : MutableList<ItemWrapper<T>> by items {
   private val storageFile = File("data/$name.json")
 
   init {

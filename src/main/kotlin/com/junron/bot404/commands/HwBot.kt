@@ -5,7 +5,6 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
-import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.util.*
 import kotlinx.serialization.Serializable
@@ -77,15 +76,7 @@ object HwBot : Command {
                   ?: return@command bot reject this
           val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
                   ?: return@command bot.reject(this, "$index is not a valid homework index.")
-          reply("", embed = embed {
-            title = homework.text
-            field("Subject", homework.subject, false)
-            field("Due", homework.dueDate.toDate().toShortString(), false)
-            field("Tags", if (homework.tags.isEmpty()) "None" else homework.tags.joinToString(", "), false)
-            field("Last edited by", homework.lastEditPerson, false)
-            field("Last updated", homework.lastEditTime.toDate().toDetailedString(), false)
-            color = Colors.GREEN
-          })
+          reply("", embed = homework.generateEmbed())
         }
 
         command("edit") {
@@ -97,41 +88,35 @@ object HwBot : Command {
           val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
                   ?: return@command bot.reject(this, "$index is not a valid homework index.")
           val fields = listOf("Subject", "Text", "Due date", "Tags")
-          lateinit var selectedFields: List<String>
-          with(Conversation(null)) {
-            init(bot, channelId, listOf(MultipleChoiceQuestion("Select fields you want to edit, separated by commas.", fields) {
-              selectedFields = it
+          reply("Editing ${homework.text}")
+          with(Conversation(homework)) {
+            init(bot, channelId, listOf(MultipleChoiceQuestion("Select fields you want to edit, separated by commas.", fields) { selectedFields ->
+              if ("Subject" in selectedFields) addQuestion(ChoiceQuestion("Select subject: ", config.subjects) {
+                state = state.copy(subject = it)
+                next()
+              })
+              if ("Text" in selectedFields) addQuestion(TextQuestion("Enter text: ") {
+                state = state.copy(text = it)
+                next()
+              })
+              if ("Due date" in selectedFields) addQuestion(DateQuestion("Enter due date: ", true) {
+                state = state.copy(dueDate = it.toDateString())
+                next()
+              })
+              if ("Tags" in selectedFields) addQuestion(MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags) {
+                state = state.copy(tags = it)
+                next()
+              })
+              addQuestion(Done("Homework edited successfully") {
+                state = state.copy(
+                        lastEditPerson = author.username,
+                        lastEditTime = Date().toDateString())
+                reply("",embed = state.generateEmbed())
+                editHomework(state)
+                updatePermanent(bot)
+              })
               next()
-            }, Done("Editing ${homework.text}") {
-              with(Conversation(homework)) {
-                init(bot, channelId, buildList<Question<*>> {
-                  if ("Subject" in selectedFields) add(ChoiceQuestion("Select subject: ", config.subjects) {
-                    state = state.copy(subject = it)
-                    next()
-                  })
-                  if ("Text" in selectedFields) add(TextQuestion("Enter text: ") {
-                    state = state.copy(text = it)
-                    next()
-                  })
-                  if ("Due date" in selectedFields) add(DateQuestion("Enter due date: ", true) {
-                    state = state.copy(dueDate = it.toDateString())
-                    next()
-                  })
-                  if ("Tags" in selectedFields) add(MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags) {
-                    state = state.copy(tags = it)
-                    next()
-                  })
-                  add(Done("Homework edited successfully") {
-                    state = state.copy(
-                            lastEditPerson = author.username,
-                            lastEditTime = Date().toDateString())
-                    editHomework(state)
-                    updatePermanent(bot)
-                  })
-                })
-              }
-            })
-            )
+            }))
           }
         }
         command("add") {
@@ -160,6 +145,7 @@ object HwBot : Command {
                       state = state.copy(
                               lastEditPerson = author.username,
                               lastEditTime = Date())
+                      reply("",embed = state.toHomework().generateEmbed())
                       addHomework(state.toHomework())
                       updatePermanent(bot)
                     }))
