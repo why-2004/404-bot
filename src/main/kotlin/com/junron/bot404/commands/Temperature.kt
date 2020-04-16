@@ -63,6 +63,7 @@ object Temperature : Command {
                       reply("**Reminders**\n" + state.joinToString("\n") {
                         "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
                       })
+                      Temperature.init(bot)
                     }))
           }
         }
