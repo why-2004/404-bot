@@ -136,10 +136,8 @@ fun editHomework(homework: Homework) {
 }
 
 @UnstableDefault
-fun deleteHomework(homeworkIndex: Int): Boolean {
-  val currentHomework = getHomework().sortedBy { it.dueDate }
-  if (homeworkIndex !in 0..currentHomework.lastIndex) return false
-  val homeworkId = currentHomework[homeworkIndex].id
+fun deleteHomework(homework: Homework): Boolean {
+  val homeworkId = homework.id
   val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
   hwFile.writeText(
           indentedJson.stringify(Homework.serializer().list, homeworkList

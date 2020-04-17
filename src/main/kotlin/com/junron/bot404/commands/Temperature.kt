@@ -29,8 +29,13 @@ object Temperature : Command {
       with(prefix) {
         init(bot)
         command("subscribe") {
-          println("ok")
           if (guildId != null) return@command bot reject this
+          val subscriberId = subscribers.find { it.item.authorId == authorId }
+                  ?.id
+          if (subscriberId != null) {
+            reply("You have already subscribed.")
+            return@command
+          }
           subscribers += Subscriber(author.username, authorId, listOf(Time(8, 0)))
           reply("""You will be reminded to submit your temperature at 8am.
             `!temperature config` to change reminder time
@@ -50,7 +55,7 @@ object Temperature : Command {
             }
             lateinit var hasNext: BooleanQuestion
             hasNext = BooleanQuestion("Add another reminder? ") {
-              if(it){
+              if (it) {
                 addQuestion(question)
                 addQuestion(hasNext)
               }
@@ -63,7 +68,7 @@ object Temperature : Command {
                       reply("**Reminders**\n" + state.joinToString("\n") {
                         "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
                       })
-                      Temperature.init(bot)
+                      init(bot)
                     }))
           }
         }

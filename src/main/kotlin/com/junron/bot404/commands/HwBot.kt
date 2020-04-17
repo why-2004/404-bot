@@ -1,10 +1,15 @@
 package com.junron.bot404.commands
 
-import com.jessecorbett.diskord.dsl.*
+import com.jessecorbett.diskord.api.model.Message
+import com.jessecorbett.diskord.dsl.Bot
+import com.jessecorbett.diskord.dsl.CommandSet
+import com.jessecorbett.diskord.dsl.command
+import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
+import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.util.*
 import kotlinx.serialization.Serializable
@@ -40,19 +45,19 @@ object HwBot : Command {
         }
         command("subscribe") {
           if (guildId != null) return@command bot reject this
+          val subscriberId = subscribers.find { it.item == authorId.toLong() }
+                  ?.id
+          if (subscriberId != null) {
+            reply("You have already subscribed.")
+            return@command
+          }
           subscribers += authorId.toLong()
           bot accept this
         }
         command("delete") {
-          if (clientStore.guilds[config.guild].getMember(authorId).roleIds
-                          .intersect(config.adminRoleIds).isEmpty() || guildId != null
-          ) return@command bot reject this
-          val index = words.getOrNull(2)?.toIntOrNull()
-                  ?: return@command bot reject this
-          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
-                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          val homework = getSelectedHomework(bot, this) ?: return@command
           if (words.getOrNull(3) == "--force") {
-            deleteHomework(index)
+            deleteHomework(homework)
             updatePermanent(bot)
             return@command bot accept this
           }
@@ -60,7 +65,7 @@ object HwBot : Command {
             init(bot, channelId, listOf(TextQuestion(
                     "Are you sure you want to delete '${homework.text}'? Type 'y' to confirm.") {
               if (it.toLowerCase().trim() == "y") {
-                if (!deleteHomework(index)) bot reject this@command
+                if (!deleteHomework(homework)) bot reject this@command
                 next()
                 updatePermanent(bot)
                 return@TextQuestion
@@ -72,21 +77,12 @@ object HwBot : Command {
         }
 
         command("info") {
-          val index = words.getOrNull(2)?.toIntOrNull()
-                  ?: return@command bot reject this
-          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
-                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          val homework = getSelectedHomework(bot, this, false) ?: return@command
           reply("", embed = homework.generateEmbed())
         }
 
         command("edit") {
-          if (clientStore.guilds[config.guild].getMember(authorId).roleIds
-                          .intersect(config.adminRoleIds).isEmpty() || guildId != null
-          ) return@command bot reject this
-          val index = words.getOrNull(2)?.toIntOrNull()
-                  ?: return@command bot reject this
-          val homework = getHomework().sortedBy { it.dueDate }.getOrNull(index)
-                  ?: return@command bot.reject(this, "$index is not a valid homework index.")
+          val homework = getSelectedHomework(bot, this) ?: return@command
           val fields = listOf("Subject", "Text", "Due date", "Tags")
           reply("Editing ${homework.text}")
           with(Conversation(homework)) {
@@ -111,7 +107,7 @@ object HwBot : Command {
                 state = state.copy(
                         lastEditPerson = author.username,
                         lastEditTime = Date().toDateString())
-                reply("",embed = state.generateEmbed())
+                reply("", embed = state.generateEmbed())
                 editHomework(state)
                 updatePermanent(bot)
               })
@@ -145,12 +141,35 @@ object HwBot : Command {
                       state = state.copy(
                               lastEditPerson = author.username,
                               lastEditTime = Date())
-                      reply("",embed = state.toHomework().generateEmbed())
+                      reply("", embed = state.toHomework().generateEmbed())
                       addHomework(state.toHomework())
                       updatePermanent(bot)
                     }))
           }
         }
+      }
+    }
+  }
+
+  private suspend fun getSelectedHomework(bot: Bot, message: Message, adminOnly: Boolean = true): Homework? {
+    with(bot) {
+      with(message) {
+        if (adminOnly && clientStore.guilds[config.guild].getMember(authorId).roleIds
+                        .intersect(config.adminRoleIds).isEmpty() || guildId != null
+        ) return run {
+          bot reject this
+          null
+        }
+        val index = words.getOrNull(2)?.toIntOrNull()
+                ?: return run {
+                  bot reject this
+                  null
+                }
+        return getHomework().sortedBy { it.dueDate }.getOrNull(index)
+                ?: return run {
+                  bot.reject(this, "$index is not a valid homework index.")
+                  null
+                }
       }
     }
   }
