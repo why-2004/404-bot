@@ -1,31 +1,69 @@
 package com.junron.bot404.commands
 
 import com.jessecorbett.diskord.api.model.Message
-import com.jessecorbett.diskord.dsl.Bot
-import com.jessecorbett.diskord.dsl.CommandSet
-import com.jessecorbett.diskord.dsl.command
-import com.jessecorbett.diskord.dsl.embed
+import com.jessecorbett.diskord.api.rest.CreateMessage
+import com.jessecorbett.diskord.dsl.*
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
 import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
+import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
+import java.time.DayOfWeek
+import java.time.ZonedDateTime
 import java.util.*
+import kotlin.concurrent.fixedRateTimer
 
+
+@Serializable
+data class HwBotSubscriber(
+        val userName: String,
+        override val authorId: String,
+        override val timings: List<Time> = listOf(Time(19, 0)),
+        val excludeSubjects: List<String> = emptyList()
+) : Subscriber()
 
 object HwBot : Command {
+  private val subscribers = Storage("subscribers", HwBotSubscriber.serializer())
 
   @ExperimentalStdlibApi
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
-
+    val subscriberReminders = ScheduledReminders(subscribers, bot) { it, _ ->
+      val dayOfWeek = ZonedDateTime.now().dayOfWeek
+      if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && getHomework().tomorrow.isEmpty()) return@ScheduledReminders
+      val embed = buildHomeworkEmbeds(getHomework().tomorrow).firstOrNull()
+              ?: embed {
+                title = "There is no homework tomorrow"
+                color = Colors.GREEN
+              }
+      runBlocking {
+        bot.dmUser(it.authorId, CreateMessage(content = "", embed = embed))
+      }
+    }
+    Subscriptions.init(bot, prefix, subscribers, subscriberReminders) {
+      HwBotSubscriber(it.author.username, it.authorId, listOf(Time(19, 0)))
+    }
+    fixedRateTimer(
+            UUID.randomUUID().toString(),
+            false,
+            0L,
+            3.6e+6.toLong()
+    ) {
+      updatePermanent(bot)
+    }
     with(bot) {
       with(prefix) {
-        init(bot)
+        commands("reminders") {
+          command("config") {
+
+          }
+        }
         command("show") {
           val homework = getHomework()
           reply("", embed = combineEmbeds(buildHomeworkEmbeds(homework)))
@@ -43,17 +81,6 @@ object HwBot : Command {
           }
           reply("", embed = embed)
         }
-        command("subscribe") {
-          if (guildId != null) return@command bot reject this
-          val subscriberId = subscribers.find { it.item == authorId.toLong() }
-                  ?.id
-          if (subscriberId != null) {
-            reply("You have already subscribed.")
-            return@command
-          }
-          subscribers += authorId.toLong()
-          bot accept this
-        }
         command("delete") {
           val homework = getSelectedHomework(bot, this) ?: return@command
           if (words.getOrNull(3) == "--force") {
@@ -65,7 +92,7 @@ object HwBot : Command {
             init(bot, channelId, listOf(TextQuestion(
                     "Are you sure you want to delete '${homework.text}'? Type 'y' to confirm.") {
               if (it.toLowerCase().trim() == "y") {
-                if (!deleteHomework(homework)) bot reject this@command
+                deleteHomework(homework)
                 next()
                 updatePermanent(bot)
                 return@TextQuestion
@@ -176,4 +203,7 @@ object HwBot : Command {
 }
 
 @Serializable
-data class PermanentMessage(val channel: String, val messageId: String)
+data class PermanentMessage(val channel: String, val messageId: String) : IndexableItem {
+  override val id: String
+    get() = messageId
+}

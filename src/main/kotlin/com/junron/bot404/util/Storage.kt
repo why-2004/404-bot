@@ -1,21 +1,17 @@
 package com.junron.bot404.util
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.list
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.list
 import java.io.File
 
 
-class Storage<T>(
+class Storage<T : IndexableItem>(
         name: String,
         private val serializer: KSerializer<T>,
-        private val items: MutableList<ItemWrapper<T>> = mutableListOf()
-) : MutableList<ItemWrapper<T>> by items {
+        private val items: MutableList<T> = mutableListOf()
+) : List<T> by items {
   private val storageFile = File("data/$name.json")
 
   init {
@@ -23,7 +19,7 @@ class Storage<T>(
       storageFile.createNewFile()
       storageFile.writeText("[]")
     }
-    val items = Json.parse(ItemWrapper.serializer(serializer).list, storageFile.readText())
+    val items = Json.parse(serializer.list, storageFile.readText())
     this.items.removeAll { true }
     items.forEach {
       this.items += it
@@ -31,14 +27,12 @@ class Storage<T>(
   }
 
   private fun write() {
-    GlobalScope.launch(Dispatchers.IO) {
-      storageFile.writeText(Json.stringify(ItemWrapper.serializer(serializer).list, items))
-    }
+    storageFile.writeText(Json.stringify(serializer.list, items))
   }
 
 
   operator fun plusAssign(item: T) {
-    this.items += ItemWrapper(uuid(), item)
+    this.items += item
     write()
   }
 
@@ -49,10 +43,14 @@ class Storage<T>(
 
   operator fun set(id: String, item: T) {
     this.items.removeIf { it.id == id }
-    this.items += ItemWrapper(id, item)
+    this.items += item
     write()
   }
 
+}
+
+interface IndexableItem {
+  val id: String
 }
 
 @Serializable

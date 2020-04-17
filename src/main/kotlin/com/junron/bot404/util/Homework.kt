@@ -1,7 +1,5 @@
 package com.junron.bot404.util
 
-import com.github.shyiko.skedule.Schedule
-import com.jessecorbett.diskord.api.rest.CreateMessage
 import com.jessecorbett.diskord.api.rest.Embed
 import com.jessecorbett.diskord.api.rest.EmbedField
 import com.jessecorbett.diskord.api.rest.MessageEdit
@@ -14,18 +12,11 @@ import com.junron.bot404.model.Homework
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.builtins.list
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.time.DayOfWeek
-import java.time.LocalTime
-import java.time.ZonedDateTime
-import java.util.*
-import kotlin.concurrent.fixedRateTimer
 
 private val hwFile = File("./homework.json")
 val permanentMessageStorage = Storage("permanentMessages", PermanentMessage.serializer())
-val subscribers = Storage("subscribers", Long.serializer())
 val tags = listOf(
         "Graded",
         "Project",
@@ -84,39 +75,6 @@ fun Homework.generateEmbed() = embed {
   color = Colors.GREEN
 }
 
-@UnstableDefault
-fun init(bot: Bot) {
-  fixedRateTimer(
-          UUID.randomUUID().toString(),
-          false,
-          (Schedule.at(LocalTime.of(19, 0))
-                  .everyDay()
-                  .next(ZonedDateTime.now())
-                  .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
-          8.64e+7.toLong()
-  ) {
-    val dayOfWeek = ZonedDateTime.now().dayOfWeek
-    if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && getHomework().tomorrow.isEmpty()) return@fixedRateTimer
-    val embed = buildHomeworkEmbeds(getHomework().tomorrow).firstOrNull()
-            ?: embed {
-              title = "There is no homework tomorrow"
-              color = Colors.GREEN
-            }
-    subscribers.forEach {
-      runBlocking {
-        Reminders.dmUser(bot, it.item.toString(), CreateMessage(content = "", embed = embed))
-      }
-    }
-  }
-  fixedRateTimer(
-          UUID.randomUUID().toString(),
-          false,
-          0L,
-          3.6e+6.toLong()
-  ) {
-    updatePermanent(bot)
-  }
-}
 
 @UnstableDefault
 fun addHomework(homework: Homework) {
@@ -136,15 +94,8 @@ fun editHomework(homework: Homework) {
 }
 
 @UnstableDefault
-fun deleteHomework(homework: Homework): Boolean {
-  val homeworkId = homework.id
-  val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
-  hwFile.writeText(
-          indentedJson.stringify(Homework.serializer().list, homeworkList
-                  .filter { it.id != homeworkId }
-          )
-  )
-  return true
+fun deleteHomework(homework: Homework) {
+  editHomework(homework.copy(deleted = true))
 }
 
 @UnstableDefault
@@ -152,7 +103,7 @@ fun updatePermanent(bot: Bot) {
   val homework = getHomework()
   permanentMessageStorage.forEach {
     runBlocking {
-      bot.clientStore.channels[it.item.channel].editMessage(it.item.messageId, MessageEdit(
+      bot.clientStore.channels[it.channel].editMessage(it.messageId, MessageEdit(
               content = "",
               embed = combineEmbeds(buildHomeworkEmbeds(homework))
       ))

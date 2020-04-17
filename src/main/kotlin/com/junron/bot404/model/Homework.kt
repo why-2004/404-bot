@@ -1,12 +1,13 @@
 package com.junron.bot404.model
 
+import com.junron.bot404.util.IndexableItem
 import com.junron.bot404.util.toDateString
 import kotlinx.serialization.Serializable
 import java.util.*
 
 @Serializable
 data class Homework(
-        val id: String,
+        override val id: String,
         val subject: String,
         val dueDate: String,
         val text: String,
@@ -14,7 +15,7 @@ data class Homework(
         val lastEditPerson: String,
         val lastEditTime: String,
         val deleted: Boolean = false
-)
+): IndexableItem
 
 
 data class HomeworkNullable(

@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.util.authorId
+import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -19,31 +20,38 @@ import kotlin.concurrent.fixedRateTimer
 data class Time(val hour: Int, val minute: Int)
 
 @Serializable
-data class Subscriber(val userName: String, val authorId: String, val timings: List<Time>)
+data class TemperatureSubscriber(val userName: String, override val authorId: String,
+                                 override val timings: List<Time> = listOf(Time(8, 0))) : Subscriber()
 
 object Temperature : Command {
-  private val subscribers = Storage("temp_subscribers", Subscriber.serializer())
-  lateinit var timers: List<Timer>
+  private val subscribers = Storage("temp_subscribers", TemperatureSubscriber.serializer())
+  private lateinit var reminders: ScheduledReminders<TemperatureSubscriber>
   override fun init(bot: Bot, prefix: CommandSet) {
     with(bot) {
       with(prefix) {
-        init(bot)
-        command("subscribe") {
-          if (guildId != null) return@command bot reject this
-          val subscriberId = subscribers.find { it.item.authorId == authorId }
-                  ?.id
-          if (subscriberId != null) {
-            reply("You have already subscribed.")
-            return@command
+        reminders  = ScheduledReminders(subscribers, bot){it,_->
+          runBlocking {
+            bot.dmUser(it.authorId, CreateMessage(content = "Please take your temperature. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
           }
-          subscribers += Subscriber(author.username, authorId, listOf(Time(8, 0)))
-          reply("""You will be reminded to submit your temperature at 8am.
-            `!temperature config` to change reminder time
-            `!temperature reminders` to list reminders""".trimIndent())
+        }
+        Subscriptions.init(
+                bot,
+                this,
+                subscribers,
+                reminders,
+                """
+                  You will be reminded to submit your temperature at 8am.
+                  **Commands:**
+                  `!temperature config` to change reminder time
+                  `!temperature reminders` to list reminders
+                """.trimIndent(),
+                "You are not subscribed. Send `!temperature subscribe` to subscribe."
+        ){
+          TemperatureSubscriber(it.author.username, it.authorId)
         }
         command("config") {
           if (guildId != null) return@command bot reject this
-          val subscriberId = subscribers.find { it.item.authorId == authorId }
+          val subscriberId = subscribers.find { it.authorId == authorId }
                   ?.id
                   ?: return@command run {
                     reply("You are not subscribed. Send `!temperature subscribe` to subscribe.")
@@ -64,56 +72,14 @@ object Temperature : Command {
             init(bot, channelId, listOf(question, hasNext,
                     Done("Reminders updated!") {
                       subscribers -= subscriberId
-                      subscribers += Subscriber(author.username, authorId, state)
+                      subscribers += TemperatureSubscriber(author.username, authorId, state)
                       reply("**Reminders**\n" + state.joinToString("\n") {
                         "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
                       })
-                      init(bot)
+                      reminders.updateSubscriptions(subscribers)
                     }))
           }
         }
-        command("reminders") {
-          val subscriber = subscribers.find { it.item.authorId == authorId }
-                  ?: return@command run {
-                    reply("You are not subscribed. Send `!temperature subscribe` to subscribe.")
-                  }
-          reply("**Reminders**\n" + subscriber.item.timings.joinToString("\n") {
-            "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
-          })
-        }
-      }
-    }
-  }
-
-  @UnstableDefault
-  fun init(bot: Bot) {
-    if (::timers.isInitialized) timers.forEach { it.cancel() }
-    val timings = mutableMapOf<Time, MutableList<String>>()
-    subscribers.forEach { (_, subscriber) ->
-      subscriber.timings.forEach {
-        if (timings.containsKey(it)) {
-          timings[it]?.plusAssign(subscriber.authorId)
-        } else {
-          timings[it] = mutableListOf(subscriber.authorId)
-        }
-      }
-    }
-    timers = timings.map { (time, subscribers) ->
-      fixedRateTimer(
-              UUID.randomUUID().toString(),
-              false,
-              (Schedule.at(LocalTime.of(time.hour, time.minute))
-                      .everyDay()
-                      .next(ZonedDateTime.now())
-                      .toEpochSecond() - ZonedDateTime.now().toEpochSecond()) * 1000,
-              8.64e+7.toLong()
-      ) {
-        subscribers
-                .forEach {
-                  runBlocking {
-                    Reminders.dmUser(bot, it, CreateMessage(content = "Please take your temperature. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
-                  }
-                }
       }
     }
   }
