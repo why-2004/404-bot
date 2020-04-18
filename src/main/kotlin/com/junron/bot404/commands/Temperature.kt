@@ -1,6 +1,5 @@
 package com.junron.bot404.commands
 
-import com.github.shyiko.skedule.Schedule
 import com.jessecorbett.diskord.api.rest.CreateMessage
 import com.jessecorbett.diskord.dsl.Bot
 import com.jessecorbett.diskord.dsl.CommandSet
@@ -10,11 +9,9 @@ import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.UnstableDefault
-import java.time.LocalTime
+import java.time.DayOfWeek
 import java.time.ZonedDateTime
 import java.util.*
-import kotlin.concurrent.fixedRateTimer
 
 @Serializable
 data class Time(val hour: Int, val minute: Int)
@@ -29,7 +26,8 @@ object Temperature : Command {
   override fun init(bot: Bot, prefix: CommandSet) {
     with(bot) {
       with(prefix) {
-        reminders  = ScheduledReminders(subscribers, bot){it,_->
+        reminders = ScheduledReminders(subscribers, bot) { it, _ ->
+          if (Date().isWeekend) return@ScheduledReminders
           runBlocking {
             bot.dmUser(it.authorId, CreateMessage(content = "Please take your temperature. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
           }
@@ -46,7 +44,7 @@ object Temperature : Command {
                   `!temperature reminders` to list reminders
                 """.trimIndent(),
                 "You are not subscribed. Send `!temperature subscribe` to subscribe."
-        ){
+        ) {
           TemperatureSubscriber(it.author.username, it.authorId)
         }
         command("config") {

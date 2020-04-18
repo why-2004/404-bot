@@ -52,6 +52,3 @@ class Storage<T : IndexableItem>(
 interface IndexableItem {
   val id: String
 }
-
-@Serializable
-data class ItemWrapper<T>(val id: String, val item: T)

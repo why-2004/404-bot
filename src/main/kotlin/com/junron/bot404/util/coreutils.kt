@@ -60,6 +60,8 @@ fun Date.isThisWeek() = this.toLocalDate()
 
 val Date.dayOfWeek: DayOfWeek
   get() = this.toLocalDate().dayOfWeek
+val Date.isWeekend: Boolean
+  get() = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY
 
 @UnstableDefault
 val indentedJson = Json(JsonConfiguration(prettyPrint = true))
