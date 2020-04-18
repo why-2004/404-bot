@@ -9,8 +9,6 @@ import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import java.time.DayOfWeek
-import java.time.ZonedDateTime
 import java.util.*
 
 @Serializable

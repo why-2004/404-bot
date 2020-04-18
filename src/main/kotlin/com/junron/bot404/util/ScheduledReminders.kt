@@ -34,7 +34,7 @@ class ScheduledReminders<T : Subscriber>(
     }
     timers = timings.map { (time, subscribers) ->
       fixedRateTimer(
-              UUID.randomUUID().toString(),
+              uuid(),
               false,
               (Schedule.at(LocalTime.of(time.hour, time.minute))
                       .everyDay()

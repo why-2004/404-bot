@@ -2,7 +2,10 @@ package com.junron.bot404.commands
 
 import com.jessecorbett.diskord.api.model.Message
 import com.jessecorbett.diskord.api.rest.CreateMessage
-import com.jessecorbett.diskord.dsl.*
+import com.jessecorbett.diskord.dsl.Bot
+import com.jessecorbett.diskord.dsl.CommandSet
+import com.jessecorbett.diskord.dsl.command
+import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
@@ -34,23 +37,24 @@ object HwBot : Command {
   @ExperimentalStdlibApi
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
-    val subscriberReminders = ScheduledReminders(subscribers, bot) { it, _ ->
+    val subscriberReminders = ScheduledReminders(subscribers, bot) { subscriber, _ ->
       val dayOfWeek = ZonedDateTime.now().dayOfWeek
-      if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && getHomework().tomorrow.isEmpty()) return@ScheduledReminders
-      val embed = buildHomeworkEmbeds(getHomework().tomorrow).firstOrNull()
+      val homework = getHomework().filter { it.subject !in subscriber.excludeSubjects }
+      if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && homework.tomorrow.isEmpty()) return@ScheduledReminders
+      val embed = buildHomeworkEmbeds(homework.tomorrow).firstOrNull()
               ?: embed {
-                title = "There is no homework tomorrow"
+                title = "There is no homework due tomorrow"
                 color = Colors.GREEN
               }
       runBlocking {
-        bot.dmUser(it.authorId, CreateMessage(content = "", embed = embed))
+        bot.dmUser(subscriber.authorId, CreateMessage(content = "", embed = embed))
       }
     }
     Subscriptions.init(bot, prefix, subscribers, subscriberReminders) {
       HwBotSubscriber(it.author.username, it.authorId, listOf(Time(19, 0)))
     }
     fixedRateTimer(
-            UUID.randomUUID().toString(),
+            uuid(),
             false,
             0L,
             3.6e+6.toLong()
@@ -59,9 +63,27 @@ object HwBot : Command {
     }
     with(bot) {
       with(prefix) {
-        commands("reminders") {
-          command("config") {
-
+        command("config") {
+          if (guildId != null) return@command bot reject this
+          val subscriber = subscribers.find { it.authorId == authorId }
+                  ?: return@command run {
+                    reply("You are not subscribed. Send `${config.hwbotPrefix} subscribe` to subscribe.")
+                  }
+          with(Conversation(subscriber)) {
+            init(bot, channelId, listOf(TimeQuestion("Please enter reminder time (24 hour hh:mm)") {
+              state = state.copy(timings = listOf(it))
+              next()
+            }, MultipleChoiceQuestion("Enter subjects you do not want to be notified about, separated by commas. Enter - to skip.", config.subjects) {
+              state = state.copy(excludeSubjects = it)
+              next()
+            }, Done("Reminders updated!") {
+              subscribers -= state.id
+              subscribers += state
+              reply("**Reminders**\n" + state.timings.joinToString("\n") {
+                "${it.hour.toString().padStart(2, '0')}:${it.minute.toString().padStart(2, '0')}"
+              })
+              subscriberReminders.updateSubscriptions(subscribers)
+            }))
           }
         }
         command("show") {
