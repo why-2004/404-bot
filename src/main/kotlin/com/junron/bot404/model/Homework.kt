@@ -1,7 +1,7 @@
 package com.junron.bot404.model
 
-import com.junron.bot404.util.IndexableItem
 import com.junron.bot404.util.toDateString
+import com.junron.pyrobase.jsoncache.IndexableItem
 import kotlinx.serialization.Serializable
 import java.util.*
 

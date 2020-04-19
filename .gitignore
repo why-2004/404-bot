@@ -35,3 +35,4 @@ secrets/*
 /data/
 /src/main/kotlin/com/junron/bot404/Analyze.kt
 /homework.json
+/gradle.properties

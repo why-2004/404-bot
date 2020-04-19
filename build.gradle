@@ -14,6 +14,14 @@ repositories {
     maven{
         url = "https://kotlin.bintray.com/kotlinx"
     }
+    maven {
+        name = "Github"
+        url = uri("https://maven.pkg.github.com/junron/pyrobase-libs")
+        credentials {
+            username = "junron"
+            password = findProperty("GITHUB_PACKAGES_TOKEN") ?: System.getenv("GH_PACKAGES_TOKEN")
+        }
+    }
 }
 
 dependencies {
@@ -24,6 +32,7 @@ dependencies {
     implementation 'com.willowtreeapps:fuzzywuzzy-kotlin-jvm:0.9.0'
     implementation 'com.joestelmach:natty:0.12'
     implementation "com.github.shyiko.skedule:skedule:0.4.0"
+    implementation "com.junron.pyrobase:json-cache:1.2"
 }
 
 mainClassName = "com.junron.bot404.MainKt"

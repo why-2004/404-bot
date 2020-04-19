@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.dsl.CommandSet
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.util.authorId
 import com.junron.bot404.model.Subscriber
+import com.junron.pyrobase.jsoncache.Storage
 
 object Subscriptions {
   fun <T : Subscriber> init(

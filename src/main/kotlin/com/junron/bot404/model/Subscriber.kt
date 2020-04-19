@@ -1,7 +1,7 @@
 package com.junron.bot404.model
 
 import com.junron.bot404.commands.Time
-import com.junron.bot404.util.IndexableItem
+import com.junron.pyrobase.jsoncache.IndexableItem
 
 
 abstract class Subscriber : IndexableItem {
