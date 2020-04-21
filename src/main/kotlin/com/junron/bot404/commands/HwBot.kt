@@ -147,7 +147,11 @@ object HwBot : Command {
                 next()
               })
               if ("Due date" in selectedFields) addQuestion(DateQuestion("Enter due date: ", true) {
-                state = state.copy(dueDate = it.toDateString())
+                var date = it
+                if(it.isSameTime()){
+                  date = Timetable.setLessonTime(state.subject, date)
+                }
+                state = state.copy(dueDate = date.toDateString())
                 next()
               })
               if ("Tags" in selectedFields) addQuestion(MultipleChoiceQuestion("Please enter tags numbers, separated by commas. Enter '-' for no tags.", tags) {
@@ -177,7 +181,11 @@ object HwBot : Command {
                       next()
                     },
                     DateQuestion("Enter due date: ", true) {
-                      state = state.copy(dueDate = it)
+                      var date = it
+                      if(it.isSameTime()){
+                        date = Timetable.setLessonTime(state.subject!!, date)
+                      }
+                      state = state.copy(dueDate = date)
                       next()
                     },
                     TextQuestion("Enter homework text: ") {

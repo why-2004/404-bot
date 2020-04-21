@@ -69,7 +69,7 @@ fun combineEmbeds(embeds: List<Embed>) = embed {
 fun Homework.generateEmbed() = embed {
   title = text
   field("Subject", subject, false)
-  field("Due", dueDate.toDate().toShortString(), false)
+  field("Due", dueDate.toDate().toDetailedString(), false)
   field("Tags", if (tags.isEmpty()) "None" else tags.joinToString(", "), false)
   field("Last edited by", lastEditPerson, false)
   field("Last updated", lastEditTime.toDate().toDetailedString(), false)

@@ -37,6 +37,7 @@ fun Date.toDetailedString(): String {
   val day: String = when {
     isToday() -> "Today (${sdf.format(this)})"
     isTomorrow() -> "Tomorrow (${sdf.format(this)})"
+    isThisWeek() -> dayOfWeek.toString().toLowerCase().capitalize() + " (${sdf.format(this)})"
     else -> sdf.format(this)
   }
   return "$day at ${sdf2.format(this)}"
@@ -57,6 +58,23 @@ fun Date.isToday() = this.toLocalDate()
 
 fun Date.isThisWeek() = this.toLocalDate()
         .isBefore(LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.SUNDAY)))
+
+fun Date.isSameTime() = Calendar.getInstance().apply {
+  time = this@isSameTime
+}.run {
+  val now = Calendar.getInstance()
+  now.get(Calendar.HOUR_OF_DAY) == get(Calendar.HOUR_OF_DAY) &&
+          now.get(Calendar.MINUTE) == get(Calendar.MINUTE)
+}
+
+fun Date.isSameDate(date: Date) = Calendar.getInstance().apply {
+  time = this@isSameDate
+}.run {
+  val now = Calendar.getInstance().apply { time = date }
+  now.get(Calendar.YEAR) == get(Calendar.YEAR) &&
+          now.get(Calendar.DAY_OF_YEAR) == get(Calendar.DAY_OF_YEAR)
+}
+
 
 val Date.dayOfWeek: DayOfWeek
   get() = this.toLocalDate().dayOfWeek
