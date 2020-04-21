@@ -11,16 +11,11 @@ version "1.0-SNAPSHOT"
 repositories {
     jcenter()
     mavenCentral()
-    maven{
+    maven {
         url = "https://kotlin.bintray.com/kotlinx"
     }
     maven {
-        name = "Github"
-        url = uri("https://maven.pkg.github.com/junron/pyrobase-libs")
-        credentials {
-            username = "junron"
-            password = findProperty("GITHUB_PACKAGES_TOKEN") ?: System.getenv("GH_PACKAGES_TOKEN")
-        }
+        url = "https://junron-public-maven-repo.s3-ap-southeast-1.amazonaws.com/release"
     }
 }
 
