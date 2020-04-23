@@ -21,11 +21,24 @@ class Conversation<T>(
   private lateinit var bot: Bot
   private var questionNumber = -1
   private var active = true
+    set(value) {
+      field = value
+      if (!value) activeConversations -= channelId
+    }
   private var questions: MutableList<Question<*>> = mutableListOf()
+
+  companion object {
+    val activeConversations = mutableListOf<String>()
+  }
 
   suspend fun init(bot: Bot, channelId: String, questions: List<Question<*>>) {
     this.bot = bot
     this.channelId = channelId
+    if(channelId in activeConversations){
+      bot.clientStore.channels[channelId].sendMessage("You already have an active conversation.\nType `!cancel` to cancel that conversation.")
+      return
+    }
+    activeConversations += channelId
     this.questions = questions.toMutableList()
     bot.messageCreated {
       if (!it.isFromUser || it.channelId != channelId || !active) return@messageCreated
