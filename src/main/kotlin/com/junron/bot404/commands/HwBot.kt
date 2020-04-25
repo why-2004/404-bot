@@ -14,13 +14,12 @@ import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
+import com.junron.pyrobase.dateutils.isSchoolDay
 import com.junron.pyrobase.jsoncache.IndexableItem
 import com.junron.pyrobase.jsoncache.Storage
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
-import java.time.DayOfWeek
-import java.time.ZonedDateTime
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
@@ -40,9 +39,8 @@ object HwBot : Command {
   @UnstableDefault
   override fun init(bot: Bot, prefix: CommandSet) {
     val subscriberReminders = ScheduledReminders(subscribers, bot) { subscriber, _ ->
-      val dayOfWeek = ZonedDateTime.now().dayOfWeek
       val homework = getHomework().filter { it.subject !in subscriber.excludeSubjects }
-      if ((dayOfWeek == DayOfWeek.FRIDAY || dayOfWeek == DayOfWeek.SATURDAY) && homework.tomorrow.isEmpty()) return@ScheduledReminders
+      if (homework.tomorrow.isEmpty() && !Calendar.getInstance().apply { add(Calendar.DATE, 1) }.time.isSchoolDay()) return@ScheduledReminders
       val embed = buildHomeworkEmbeds(homework.tomorrow).firstOrNull()
               ?: embed {
                 title = "There is no homework due tomorrow"
@@ -148,7 +146,7 @@ object HwBot : Command {
               })
               if ("Due date" in selectedFields) addQuestion(DateQuestion("Enter due date: ", true) {
                 var date = it
-                if(it.isSameTime()){
+                if (it.isSameTime()) {
                   date = Timetable.setLessonTime(state.subject, date)
                 }
                 state = state.copy(dueDate = date.toDateString())
@@ -182,7 +180,7 @@ object HwBot : Command {
                     },
                     DateQuestion("Enter due date: ", true) {
                       var date = it
-                      if(it.isSameTime()){
+                      if (it.isSameTime()) {
                         date = Timetable.setLessonTime(state.subject!!, date)
                       }
                       state = state.copy(dueDate = date)

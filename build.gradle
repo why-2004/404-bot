@@ -28,6 +28,7 @@ dependencies {
     implementation 'com.joestelmach:natty:0.12'
     implementation "com.github.shyiko.skedule:skedule:0.4.0"
     implementation "com.junron.pyrobase:json-cache:1.2"
+    implementation "com.junron.pyrobase:dateutils:1.2"
 }
 
 mainClassName = "com.junron.bot404.MainKt"

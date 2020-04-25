@@ -7,6 +7,7 @@ import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.util.authorId
 import com.junron.bot404.model.Subscriber
 import com.junron.bot404.util.*
+import com.junron.pyrobase.dateutils.isSchoolDay
 import com.junron.pyrobase.jsoncache.Storage
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -26,7 +27,7 @@ object Temperature : Command {
     with(bot) {
       with(prefix) {
         reminders = ScheduledReminders(subscribers, bot) { it, _ ->
-          if (Date().isWeekend) return@ScheduledReminders
+          if (!Date().isSchoolDay()) return@ScheduledReminders
           runBlocking {
             bot.dmUser(it.authorId, CreateMessage(content = "Please take your temperature. https://forms.office.com/Pages/ResponsePage.aspx?id=cnEq1_jViUiahddCR1FZKi_YUnieBUBCi4vce5KjIHVUMkoxVUdBMVo2VUJTNFlSU1dFNEtNWUwxNS4u"))
           }

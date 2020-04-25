@@ -1,9 +1,9 @@
 package com.junron.bot404.util
 
 import com.junron.bot404.model.Lesson
+import com.junron.pyrobase.dateutils.isSchoolDay
 import kotlinx.serialization.builtins.list
 import java.io.File
-import java.time.DayOfWeek
 import java.util.*
 
 object Timetable {
@@ -35,10 +35,9 @@ object Timetable {
     Calendar.getInstance().apply {
       time = date
     }
-    return when (date.dayOfWeek) {
-      DayOfWeek.SUNDAY, DayOfWeek.SATURDAY -> date.setTo2359()
-      else -> getNextLesson(subject, date.setTo0000()) ?: date.setTo2359()
-    }
+    return if (date.isSchoolDay()) getNextLesson(subject, date.setTo0000())
+            ?: date.setTo2359()
+    else date.setTo2359()
   }
 
   private fun Date.setTo2359(): Date {
