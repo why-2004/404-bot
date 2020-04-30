@@ -10,7 +10,10 @@ import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
 import com.junron.bot404.config
-import com.junron.bot404.firebase.HwboardFirestore.getConfig
+import com.junron.bot404.firebase.HwboardFirestore
+import com.junron.bot404.firebase.HwboardFirestore.deleteHomework
+import com.junron.bot404.firebase.HwboardFirestore.getHomework
+import com.junron.bot404.firebase.HwboardFirestore.hwboardConfig
 import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
 import com.junron.bot404.model.Subscriber
@@ -94,7 +97,7 @@ object HwBot : Command {
                                 },
                                 MultipleChoiceQuestion(
                                     "Enter subjects you do not want to be notified about, separated by commas. Enter - to skip.",
-                                    getConfig().subjects
+                                    hwboardConfig.subjects
                                 ) {
                                     state = state.copy(excludeSubjects = it)
                                     next()
@@ -191,7 +194,7 @@ object HwBot : Command {
                                     if ("Subject" in selectedFields) addQuestion(
                                         ChoiceQuestion(
                                             "Select subject: ",
-                                            getConfig().subjects
+                                            hwboardConfig.subjects
                                         ) {
                                             state = state.copy(subject = it)
                                             next()
@@ -217,7 +220,7 @@ object HwBot : Command {
                                     if ("Tags" in selectedFields) addQuestion(
                                         MultipleChoiceQuestion(
                                             "Please enter tags numbers, separated by commas. Enter '-' for no tags.",
-                                            tags
+                                            HwboardFirestore.getTags()
                                         ) {
                                             state = state.copy(tags = it)
                                             next()
@@ -228,7 +231,7 @@ object HwBot : Command {
                                             lastEditTime = Date().toDateString()
                                         )
                                         reply("", embed = state.generateEmbed())
-                                        editHomework(state)
+                                        HwboardFirestore.updateHomework(state)
                                         updatePermanent(bot)
                                     })
                                     next()
@@ -237,7 +240,7 @@ object HwBot : Command {
                     }
                 }
                 command("add") {
-                    val config = getConfig()
+                    val config = hwboardConfig
                     if (clientStore.guilds[config.guild].getMember(authorId).roleIds
                             .intersect(config.editRoles)
                             .isEmpty() || guildId != null
@@ -269,7 +272,7 @@ object HwBot : Command {
                                 },
                                 MultipleChoiceQuestion(
                                     "Please enter tags numbers, separated by commas. Enter '-' for no tags.",
-                                    tags
+                                    HwboardFirestore.getTags()
                                 ) {
                                     state = state.copy(tags = it)
                                     next()
@@ -284,7 +287,7 @@ object HwBot : Command {
                                         embed = state.toHomework()
                                             .generateEmbed()
                                     )
-                                    addHomework(state.toHomework())
+                                    HwboardFirestore.updateHomework(state.toHomework())
                                     updatePermanent(bot)
                                 })
                         )
@@ -301,7 +304,7 @@ object HwBot : Command {
     ): Homework? {
         with(bot) {
             with(message) {
-                val config = getConfig()
+                val config = hwboardConfig
                 if (adminOnly && clientStore.guilds[config.guild].getMember(
                         authorId
                     ).roleIds

@@ -1,19 +1,20 @@
 package com.junron.bot404.model
 
 import com.junron.bot404.util.toDateString
+import com.junron.bot404.util.uuid
 import com.junron.pyrobase.jsoncache.IndexableItem
 import kotlinx.serialization.Serializable
 import java.util.*
 
 @Serializable
 data class Homework(
-    override val id: String,
-    val subject: String,
-    val dueDate: String,
-    val text: String,
-    val tags: List<String>,
-    val lastEditPerson: String,
-    val lastEditTime: String,
+    override val id: String = uuid(),
+    val subject: String = "",
+    val dueDate: String = "",
+    val text: String = "",
+    val tags: List<String> = emptyList(),
+    val lastEditPerson: String = "",
+    val lastEditTime: String = "",
     val deleted: Boolean = false
 ) : IndexableItem
 

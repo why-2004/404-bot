@@ -8,28 +8,16 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.dsl.field
 import com.jessecorbett.diskord.util.Colors
 import com.junron.bot404.commands.PermanentMessage
+import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.model.Homework
 import com.junron.pyrobase.jsoncache.Storage
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
-import kotlinx.serialization.builtins.list
-import kotlinx.serialization.json.Json
 import java.io.File
 
 private val hwFile = File("./homework.json")
 val permanentMessageStorage =
     Storage("permanentMessages", PermanentMessage.serializer())
-val tags = listOf(
-    "Graded",
-    "Project",
-    "Optional",
-    "Assessment"
-)
-
-@UnstableDefault
-fun getHomework() =
-    indentedJson.parse(Homework.serializer().list, hwFile.readText())
-        .filter { it.dueDate.toDate().isFuture() }
 
 fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
     var counter = 0
@@ -85,35 +73,9 @@ fun Homework.generateEmbed() = embed {
     color = Colors.GREEN
 }
 
-
-@UnstableDefault
-fun addHomework(homework: Homework) {
-    val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
-    hwFile.writeText(
-        indentedJson.stringify(
-            Homework.serializer().list,
-            homeworkList + homework
-        )
-    )
-}
-
-@UnstableDefault
-fun editHomework(homework: Homework) {
-    val homeworkList = Json.parse(Homework.serializer().list, hwFile.readText())
-        .filter { it.id != homework.id } + homework
-    hwFile.writeText(
-        indentedJson.stringify(Homework.serializer().list, homeworkList)
-    )
-}
-
-@UnstableDefault
-fun deleteHomework(homework: Homework) {
-    editHomework(homework.copy(deleted = true))
-}
-
 @UnstableDefault
 fun updatePermanent(bot: Bot) {
-    val homework = getHomework()
+    val homework = HwboardFirestore.getHomework()
     permanentMessageStorage.forEach {
         runBlocking {
             bot.clientStore.channels[it.channel].editMessage(
