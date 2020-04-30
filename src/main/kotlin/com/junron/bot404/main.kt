@@ -6,8 +6,10 @@ import com.jessecorbett.diskord.dsl.commands
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
 import com.junron.bot404.commands.Temperature
+import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.util.Timetable
 import kotlinx.serialization.UnstableDefault
+import java.io.File
 
 val helpText = """
   **Commands**
@@ -55,25 +57,28 @@ val helpText = """
 @ExperimentalStdlibApi
 @UnstableDefault
 suspend fun main() {
-  bot(config.discordToken) {
-    commands("${config.botPrefix} ") {
-      command("help") {
-        reply(helpText)
-      }
-      command("ping") {
-        reply("pong")
-      }
+    if(File("./homework.json").exists()){
+        HwboardFirestore.syncData()
     }
+    bot(config.discordToken) {
+        commands("${config.botPrefix} ") {
+            command("help") {
+                reply(helpText)
+            }
+            command("ping") {
+                reply("pong")
+            }
+        }
 
-    commands("!temperature "){
-      Temperature.init(this@bot, this)
+        commands("!temperature ") {
+            Temperature.init(this@bot, this)
+        }
+
+        commands("${config.hwbotPrefix} ") {
+            HwBot.init(this@bot, this)
+            Timetable.init()
+        }
+
+        Pin.init(this)
     }
-
-    commands("${config.hwbotPrefix} ") {
-      HwBot.init(this@bot, this)
-      Timetable.init()
-    }
-
-    Pin.init(this)
-  }
 }
