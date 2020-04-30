@@ -18,6 +18,7 @@ object HwboardFirestore {
     var hwboardConfig: HwboardConfig
         private set
     private var homework: List<Homework>
+    private val callbacks = mutableListOf<(List<Homework>) -> Unit>()
 
     init {
         val serviceAccount = File("secrets/service-account.json")
@@ -54,6 +55,7 @@ object HwboardFirestore {
                 homework = value.documents.map {
                     it.toObject(Homework::class.java)
                 }
+                callbacks.forEach { it(homework) }
             }
     }
 
@@ -91,5 +93,9 @@ object HwboardFirestore {
 
     fun deleteHomework(homework: Homework) {
         updateHomework(homework.copy(deleted = true))
+    }
+
+    fun addListener(listener: (List<Homework>) -> Unit) {
+        callbacks += listener
     }
 }

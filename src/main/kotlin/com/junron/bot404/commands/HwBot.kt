@@ -43,6 +43,9 @@ object HwBot : Command {
     @ExperimentalStdlibApi
     @UnstableDefault
     override fun init(bot: Bot, prefix: CommandSet) {
+        HwboardFirestore.addListener {
+            updatePermanent(bot)
+        }
         val subscriberReminders =
             ScheduledReminders(subscribers, bot) { subscriber, _ ->
                 val homework =

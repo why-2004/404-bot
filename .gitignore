@@ -30,6 +30,7 @@ build
 .gradle
 
 secrets/*
+secrets/service-account.json
 !.gitkeep
 /config.json
 /data/
