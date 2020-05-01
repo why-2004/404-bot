@@ -15,7 +15,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import java.io.File
 
-private val hwFile = File("./homework.json")
 val permanentMessageStorage =
     Storage("permanentMessages", PermanentMessage.serializer())
 

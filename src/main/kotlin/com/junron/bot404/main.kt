@@ -3,13 +3,18 @@ package com.junron.bot404
 import com.jessecorbett.diskord.dsl.bot
 import com.jessecorbett.diskord.dsl.command
 import com.jessecorbett.diskord.dsl.commands
+import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
 import com.junron.bot404.commands.Temperature
 import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.util.Timetable
+import com.junron.pyrobase.dateutils.dateOnly
+import com.junron.pyrobase.dateutils.isSchoolDay
+import com.junron.pyrobase.dateutils.isSchoolHoliday
 import kotlinx.serialization.UnstableDefault
 import java.io.File
+import java.util.*
 
 val helpText = """
   **Commands**

@@ -9,7 +9,7 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.words
-import com.junron.bot404.config
+import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.firebase.HwboardFirestore.deleteHomework
 import com.junron.bot404.firebase.HwboardFirestore.getHomework
