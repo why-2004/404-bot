@@ -8,6 +8,10 @@ plugins {
 group "M20404"
 version "1.0-SNAPSHOT"
 
+shadowJar {
+    mergeServiceFiles()
+}
+
 repositories {
     jcenter()
     mavenCentral()
