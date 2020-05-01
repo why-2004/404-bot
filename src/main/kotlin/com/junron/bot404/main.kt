@@ -62,9 +62,6 @@ val helpText = """
 @ExperimentalStdlibApi
 @UnstableDefault
 suspend fun main() {
-    if(File("./homework.json").exists()){
-        HwboardFirestore.syncData()
-    }
     bot(config.discordToken) {
         commands("${config.botPrefix} ") {
             command("help") {

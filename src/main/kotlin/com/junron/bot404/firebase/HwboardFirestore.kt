@@ -2,11 +2,13 @@ package com.junron.bot404.firebase
 
 import com.google.auth.oauth2.ServiceAccountCredentials
 import com.google.cloud.firestore.Firestore
+import com.google.cloud.firestore.SetOptions
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.cloud.FirestoreClient
 import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.model.Homework
+import com.junron.bot404.model.Tag
 import com.junron.bot404.util.indentedJson
 import com.junron.bot404.util.isFuture
 import com.junron.bot404.util.toDate
@@ -97,5 +99,14 @@ object HwboardFirestore {
 
     fun addListener(listener: (List<Homework>) -> Unit) {
         callbacks += listener
+    }
+
+    private fun addTag(tag: Tag) {
+        db.collection("hwboard")
+            .document(config.hwboardName)
+            .set(
+                mapOf("tags" to (hwboardConfig.tags + tag).map { it.toMap() }),
+                SetOptions.merge()
+            )
     }
 }

@@ -223,9 +223,13 @@ object HwBot : Command {
                                     if ("Tags" in selectedFields) addQuestion(
                                         MultipleChoiceQuestion(
                                             "Please enter tags numbers, separated by commas. Enter '-' for no tags.",
-                                            HwboardFirestore.getTags()
+                                            HwboardFirestore.getTags().map { it.name }
                                         ) {
-                                            state = state.copy(tags = it)
+                                            val tags =
+                                                HwboardFirestore.getTags().filter {tag ->
+                                                    tag.name in it
+                                                }.map { it.id }
+                                            state = state.copy(tags = tags)
                                             next()
                                         })
                                     addQuestion(Done("Homework edited successfully") {
@@ -275,9 +279,13 @@ object HwBot : Command {
                                 },
                                 MultipleChoiceQuestion(
                                     "Please enter tags numbers, separated by commas. Enter '-' for no tags.",
-                                    HwboardFirestore.getTags()
+                                    HwboardFirestore.getTags().map { it.name }
                                 ) {
-                                    state = state.copy(tags = it)
+                                    val tags =
+                                        HwboardFirestore.getTags().filter {tag ->
+                                            tag.name in it
+                                        }
+                                    state = state.copy(tags = tags)
                                     next()
                                 },
                                 Done("Homework added successfully") {

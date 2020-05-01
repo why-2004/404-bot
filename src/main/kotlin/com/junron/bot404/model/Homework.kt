@@ -1,5 +1,6 @@
 package com.junron.bot404.model
 
+import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.util.toDateString
 import com.junron.bot404.util.uuid
 import com.junron.pyrobase.jsoncache.IndexableItem
@@ -16,7 +17,9 @@ data class Homework(
     val lastEditPerson: String = "",
     val lastEditTime: String = "",
     val deleted: Boolean = false
-) : IndexableItem
+) : IndexableItem {
+    fun parseTags() = HwboardFirestore.hwboardConfig.tags.filter { it.id in tags || it.name in tags }
+}
 
 
 data class HomeworkNullable(
@@ -24,7 +27,7 @@ data class HomeworkNullable(
     val subject: String? = null,
     val dueDate: Date? = null,
     val text: String? = null,
-    val tags: List<String> = emptyList(),
+    val tags: List<Tag> = emptyList(),
     val lastEditPerson: String? = null,
     val lastEditTime: Date? = null,
     val deleted: Boolean = false
@@ -34,7 +37,7 @@ data class HomeworkNullable(
         subject!!,
         dueDate!!.toDateString(),
         text!!,
-        tags,
+        tags.map { it.id },
         lastEditPerson!!,
         lastEditTime!!.toDateString()
     )

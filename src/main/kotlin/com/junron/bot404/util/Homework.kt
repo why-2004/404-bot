@@ -13,7 +13,6 @@ import com.junron.bot404.model.Homework
 import com.junron.pyrobase.jsoncache.Storage
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
-import java.io.File
 
 val permanentMessageStorage =
     Storage("permanentMessages", PermanentMessage.serializer())
@@ -33,7 +32,11 @@ fun buildHomeworkEmbeds(homeworks: List<Homework>): List<Embed> {
                         "**#${counter++} ${homework.text}**",
                         "${homework.subject}\n" +
                             if (homework.tags.isNotEmpty())
-                                "(${homework.tags.joinToString(", ")})"
+                                "(${homework.parseTags()
+                                    .joinToString(", ") { tag ->
+                                        tag.name
+                                    }
+                                })"
                             else "",
                         inline = false
                     )
@@ -64,7 +67,7 @@ fun Homework.generateEmbed() = embed {
     field("Due", dueDate.toDate().toDetailedString(), false)
     field(
         "Tags",
-        if (tags.isEmpty()) "None" else tags.joinToString(", "),
+        if (tags.isEmpty()) "None" else parseTags().joinToString{ it.name },
         false
     )
     field("Last edited by", lastEditPerson, false)

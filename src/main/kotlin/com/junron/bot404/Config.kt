@@ -15,6 +15,6 @@ data class Config(
 ) {
     companion object {
         val config =
-            Json.parse(Config.serializer(), File("config.json").readText())
+            Json.parse(serializer(), File("config.json").readText())
     }
 }
