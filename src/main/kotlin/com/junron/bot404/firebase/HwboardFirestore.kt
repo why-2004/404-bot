@@ -9,16 +9,18 @@ import com.google.firebase.cloud.FirestoreClient
 import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.model.Homework
 import com.junron.bot404.model.Tag
-import com.junron.bot404.util.indentedJson
 import com.junron.bot404.util.isFuture
 import com.junron.bot404.util.toDate
-import kotlinx.serialization.builtins.list
+import com.junron.bot404.util.uuid
 import java.io.File
+import java.util.*
+import kotlin.concurrent.schedule
 
 object HwboardFirestore {
     private val db: Firestore
     var hwboardConfig: HwboardConfig
         private set
+    private var timer: TimerTask? = null
     private var homework: List<Homework>
     private val callbacks = mutableListOf<(List<Homework>) -> Unit>()
 
@@ -57,24 +59,23 @@ object HwboardFirestore {
                 homework = value.documents.map {
                     it.toObject(Homework::class.java)
                 }
+                println("hi"==="hi")
+                setTimer()
                 callbacks.forEach { it(homework) }
             }
     }
 
-    fun syncData() {
-        val data = indentedJson.parse(
-            Homework.serializer().list,
-            File("./homework.json").readText()
-        )
-        db.batch().apply {
-            val homeworkCollection =
-                db.collection("hwboard").document(config.hwboardName)
-                    .collection("homework")
-            data.forEach {
-                val homeworkDocument = homeworkCollection.document(it.id)
-                set(homeworkDocument, it)
+    private fun setTimer() {
+        timer?.cancel()
+        homework.filter { it.dueDate.toDate().isFuture() }
+            .minBy { it.dueDate.toDate().time - Date().time }
+            ?.let {
+                val due = it.dueDate.toDate()
+                timer = Timer(uuid(), false).schedule(due) {
+                    setTimer()
+                    callbacks.forEach { it(homework) }
+                }
             }
-        }.commit().get()
     }
 
     fun getTags() = hwboardConfig.tags

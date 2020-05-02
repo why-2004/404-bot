@@ -72,14 +72,6 @@ object HwBot : Command {
                 listOf(Time(19, 0))
             )
         }
-        fixedRateTimer(
-            uuid(),
-            false,
-            0L,
-            3.6e+6.toLong()
-        ) {
-            updatePermanent(bot)
-        }
         with(bot) {
             with(prefix) {
                 command("config") {
