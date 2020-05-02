@@ -59,7 +59,6 @@ object HwboardFirestore {
                 homework = value.documents.map {
                     it.toObject(Homework::class.java)
                 }
-                println("hi"==="hi")
                 setTimer()
                 callbacks.forEach { it(homework) }
             }

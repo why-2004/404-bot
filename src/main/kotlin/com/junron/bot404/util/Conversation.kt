@@ -7,6 +7,7 @@ import com.jessecorbett.diskord.dsl.embed
 import com.jessecorbett.diskord.util.Colors
 import com.jessecorbett.diskord.util.isFromUser
 import com.jessecorbett.diskord.util.sendMessage
+import com.junron.bot404.Config
 import com.junron.bot404.commands.Time
 import com.junron.bot404.model.Homework
 import com.junron.bot404.model.HomeworkNullable
@@ -18,40 +19,51 @@ class Conversation<T>(
     var state: T
 ) {
     private lateinit var channelId: String
-    private lateinit var bot: Bot
     private var questionNumber = -1
     private var active = true
         set(value) {
             field = value
-            if (!value) activeConversations -= channelId
+            if (!value) activeConversations.remove(channelId)
         }
     private var questions: MutableList<Question<*>> = mutableListOf()
 
     companion object {
-        val activeConversations = mutableListOf<String>()
+        val activeConversations = mutableMapOf<String, Conversation<*>>()
+        private lateinit var bot: Bot
+        fun init(bot: Bot) {
+            this.bot = bot
+            this.bot.messageCreated {
+                if (!it.isFromUser) return@messageCreated
+                val conversation =
+                    activeConversations[it.channelId] ?: return@messageCreated
+                if (it.content.trim() == "!cancel") return@messageCreated run {
+                    this.bot.clientStore.channels[it.channelId].sendMessage("Cancelled")
+                    conversation.cancel()
+                }
+                if (conversation.questionNumber == 0 &&
+                    (
+                        it.content.startsWith(Config.config.hwbotPrefix)
+                            || it.content.startsWith(Config.config.botPrefix))
+                ) return@messageCreated
+                conversation.questions[conversation.questionNumber].handleMessage(
+                    it,
+                    conversation.state
+                )
+            }
+        }
     }
 
     suspend fun init(
-        bot: Bot,
         channelId: String,
         questions: List<Question<*>>
     ) {
-        this.bot = bot
         this.channelId = channelId
         if (channelId in activeConversations) {
             bot.clientStore.channels[channelId].sendMessage("You already have an active conversation.\nType `!cancel` to cancel that conversation.")
             return
         }
-        activeConversations += channelId
+        activeConversations[channelId] = this
         this.questions = questions.toMutableList()
-        bot.messageCreated {
-            if (!it.isFromUser || it.channelId != channelId || !active) return@messageCreated
-            if (it.content.trim() == "!cancel") return@messageCreated run {
-                bot.clientStore.channels[channelId].sendMessage("Cancelled")
-                cancel()
-            }
-            this.questions[questionNumber].handleMessage(it, state)
-        }
         next()
     }
 

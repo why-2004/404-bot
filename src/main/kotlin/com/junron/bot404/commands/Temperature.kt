@@ -76,7 +76,7 @@ object Temperature : Command {
                             next()
                         }
                         init(
-                            bot, channelId, listOf(question, hasNext,
+                            channelId, listOf(question, hasNext,
                                 Done("Reminders updated!") {
                                     subscribers -= subscriberId
                                     subscribers += TemperatureSubscriber(

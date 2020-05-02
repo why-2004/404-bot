@@ -25,7 +25,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import java.util.*
-import kotlin.concurrent.fixedRateTimer
 
 
 @Serializable
@@ -83,7 +82,6 @@ object HwBot : Command {
                             }
                     with(Conversation(subscriber)) {
                         init(
-                            bot,
                             channelId,
                             listOf(
                                 TimeQuestion("Please enter reminder time (24 hour hh:mm)") {
@@ -150,18 +148,19 @@ object HwBot : Command {
                         return@command bot accept this
                     }
                     with(Conversation(HomeworkNullable())) {
-                        init(bot, channelId, listOf(TextQuestion(
-                            "Are you sure you want to delete '${homework.text}'? Type 'y' to confirm."
-                        ) {
-                            if (it.toLowerCase().trim() == "y") {
-                                deleteHomework(homework)
-                                next()
-                                updatePermanent(bot)
-                                return@TextQuestion
-                            }
-                            bot.reject(this@command, "Cancelled")
-                            cancel()
-                        }, Done("Homework deleted") {})
+                        init(
+                            channelId, listOf(TextQuestion(
+                                "Are you sure you want to delete '${homework.text}'? Type 'y' to confirm."
+                            ) {
+                                if (it.toLowerCase().trim() == "y") {
+                                    deleteHomework(homework)
+                                    next()
+                                    updatePermanent(bot)
+                                    return@TextQuestion
+                                }
+                                bot.reject(this@command, "Cancelled")
+                                cancel()
+                            }, Done("Homework deleted") {})
                         )
                     }
                 }
@@ -179,7 +178,6 @@ object HwBot : Command {
                     reply("Editing ${homework.text}")
                     with(Conversation(homework)) {
                         init(
-                            bot,
                             channelId,
                             listOf(
                                 MultipleChoiceQuestion(
@@ -246,7 +244,7 @@ object HwBot : Command {
                     ) return@command bot reject this
                     with(Conversation(HomeworkNullable(id = uuid()))) {
                         init(
-                            bot, channelId, listOf(
+                            channelId, listOf(
                                 ChoiceQuestion(
                                     "Select subject: ",
                                     config.subjects

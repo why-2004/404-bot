@@ -8,6 +8,7 @@ import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
 import com.junron.bot404.commands.Temperature
 import com.junron.bot404.firebase.HwboardFirestore
+import com.junron.bot404.util.Conversation
 import com.junron.bot404.util.Timetable
 import com.junron.pyrobase.dateutils.dateOnly
 import com.junron.pyrobase.dateutils.isSchoolDay
@@ -82,5 +83,6 @@ suspend fun main() {
         }
 
         Pin.init(this)
+        Conversation.init(this)
     }
 }
