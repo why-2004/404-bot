@@ -26,6 +26,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import java.util.*
 
+@Serializable
+data class Time(val hour: Int, val minute: Int)
+
 
 @Serializable
 data class HwBotSubscriber(
