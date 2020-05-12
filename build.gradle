@@ -34,6 +34,17 @@ dependencies {
     implementation "com.junron.pyrobase:json-cache:1.2"
     implementation "com.junron.pyrobase:dateutils:1.2.2"
     implementation 'com.google.firebase:firebase-admin:6.12.2'
+    constraints {
+        implementation('commons-codec:commons-codec:1.13') {
+            because 'Information exposure vulnerability in 1.11'
+        }
+        implementation('io.netty:netty-codec:4.1.46.Final') {
+            because 'Uncontrolled Memory allocation vulnerability'
+        }
+        implementation('io.netty:netty-codec-http:4.1.44.Final'){
+            because 'HTTP Request smuggling vulnerabilities'
+        }
+    }
 }
 
 mainClassName = "com.junron.bot404.MainKt"
