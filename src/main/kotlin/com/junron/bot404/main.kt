@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.dsl.commands
 import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
+import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.util.Conversation
 import com.junron.bot404.util.Timetable
 import kotlinx.serialization.UnstableDefault
@@ -66,9 +67,12 @@ suspend fun main() {
             }
         }
 
-        commands("${config.hwbotPrefix} ") {
-            HwBot.init(this@bot, this)
-            Timetable.init()
+        if (config.hwboardEnable) {
+            HwboardFirestore.init()
+            commands("${config.hwbotPrefix} ") {
+                HwBot.init(this@bot, this)
+                Timetable.init()
+            }
         }
 
         Pin.init(this)

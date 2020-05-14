@@ -17,14 +17,14 @@ import java.util.*
 import kotlin.concurrent.schedule
 
 object HwboardFirestore {
-    private val db: Firestore
-    var hwboardConfig: HwboardConfig
+    private lateinit var db: Firestore
+    lateinit var hwboardConfig: HwboardConfig
         private set
     private var timer: TimerTask? = null
-    private var homework: List<Homework>
+    private lateinit var homework: List<Homework>
     private val callbacks = mutableListOf<(List<Homework>) -> Unit>()
 
-    init {
+    fun init(){
         val serviceAccount = File("secrets/service-account.json")
         val credentials =
             ServiceAccountCredentials.fromStream(serviceAccount.inputStream())

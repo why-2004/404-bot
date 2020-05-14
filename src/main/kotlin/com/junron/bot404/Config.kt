@@ -10,6 +10,7 @@ data class Config(
     val discordToken: String,
     val botPrefix: String,
     val hwbotPrefix: String,
+    val hwboardEnable: Boolean = true,
     val hwboardName: String = "404",
     val projectId: String
 ) {
