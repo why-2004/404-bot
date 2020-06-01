@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.dsl.commands
 import com.junron.bot404.Config.Companion.config
 import com.junron.bot404.commands.HwBot
 import com.junron.bot404.commands.Pin
+import com.junron.bot404.commands.Temperature
 import com.junron.bot404.firebase.HwboardFirestore
 import com.junron.bot404.util.Conversation
 import com.junron.bot404.util.Timetable
@@ -73,6 +74,10 @@ suspend fun main() {
                 HwBot.init(this@bot, this)
                 Timetable.init()
             }
+        }
+
+        commands("!temperature ") {
+            Temperature.init(this@bot, this)
         }
 
         Pin.init(this)
