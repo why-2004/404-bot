@@ -241,10 +241,6 @@ object HwBot : Command {
                 }
                 command("add") {
                     val config = hwboardConfig
-                    if (clientStore.guilds[config.guild].getMember(authorId).roleIds
-                            .intersect(config.editRoles)
-                            .isEmpty() || guildId != null
-                    ) return@command bot reject this
                     with(Conversation(HomeworkNullable(id = uuid()))) {
                         init(
                             channelId, listOf(
