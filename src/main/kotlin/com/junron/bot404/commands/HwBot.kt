@@ -170,7 +170,7 @@ object HwBot : Command {
 
                 command("info") {
                     val homework =
-                        getSelectedHomework(bot, this, false) ?: return@command
+                        getSelectedHomework(bot, this) ?: return@command
                     reply("", embed = homework.generateEmbed())
                 }
 
@@ -299,35 +299,22 @@ object HwBot : Command {
 
     private suspend fun getSelectedHomework(
         bot: Bot,
-        message: Message,
-        adminOnly: Boolean = true
+        message: Message
     ): Homework? {
-        with(bot) {
-            with(message) {
-                val config = hwboardConfig
-                if (adminOnly && clientStore.guilds[config.guild].getMember(
-                        authorId
-                    ).roleIds
-                        .intersect(config.editRoles)
-                        .isEmpty() || guildId != null
-                ) return run {
+        with(message) {
+            val index = words.getOrNull(2)?.toIntOrNull()
+                ?: return run {
                     bot reject this
                     null
                 }
-                val index = words.getOrNull(2)?.toIntOrNull()
-                    ?: return run {
-                        bot reject this
-                        null
-                    }
-                return getHomework().sortedBy { it.dueDate }.getOrNull(index)
-                    ?: return run {
-                        bot.reject(
-                            this,
-                            "$index is not a valid homework index."
-                        )
-                        null
-                    }
-            }
+            return getHomework().sortedBy { it.dueDate }.getOrNull(index)
+                ?: return run {
+                    bot.reject(
+                        this,
+                        "$index is not a valid homework index."
+                    )
+                    null
+                }
         }
     }
 }
